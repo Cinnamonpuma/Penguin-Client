@@ -28,6 +28,11 @@ loom {
 			sourceSet sourceSets.client
 		}
 	}
+	runs {
+		client {
+			vmArgs "Djava.awt.headless=false"
+		}
+	}
 
 }
 
