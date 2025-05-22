@@ -174,49 +174,27 @@ class MainWindow : JFrame("PenguinClient") {
         controlPanel.background = headerColor
         
         // Minimize button
-        val minimizeButton = JButton("_")
-        minimizeButton.foreground = Color(200, 200, 200)
-        minimizeButton.background = headerColor
-        minimizeButton.border = BorderFactory.createEmptyBorder(5, 10, 5, 10)
-        minimizeButton.isFocusPainted = false
-        minimizeButton.addActionListener {
+        val minimizeButton = createWindowControlButton("_") {
             state = Frame.ICONIFIED
+        }
+
+        // Maximize button
+        val maximizeButton = createWindowControlButton("□") {
+            extendedState = if (extendedState == Frame.MAXIMIZED_BOTH) Frame.NORMAL else Frame.MAXIMIZED_BOTH
         }
         
         // Close button
-        val closeButton = JButton("×")
-        closeButton.foreground = Color(200, 200, 200)
-        closeButton.background = headerColor
-        closeButton.border = BorderFactory.createEmptyBorder(5, 10, 5, 10)
-        closeButton.isFocusPainted = false
-        closeButton.addActionListener {
+        val closeButton = createWindowControlButton("×") {
             dispose()
         }
         
-        // Add hover effects
-        minimizeButton.addMouseListener(object : MouseAdapter() {
-            override fun mouseEntered(e: MouseEvent) {
-                minimizeButton.background = Color(50, 50, 50)
-            }
-            
-            override fun mouseExited(e: MouseEvent) {
-                minimizeButton.background = headerColor
-            }
-        })
-        
-        closeButton.addMouseListener(object : MouseAdapter() {
-            override fun mouseEntered(e: MouseEvent) {
-                closeButton.background = Color(180, 30, 30)
-                closeButton.foreground = Color.WHITE
-            }
-            
-            override fun mouseExited(e: MouseEvent) {
-                closeButton.background = headerColor
-                closeButton.foreground = Color(200, 200, 200)
-            }
-        })
-        
+        // Add hover effects and specific styling for close button
+        styleWindowControlButton(minimizeButton, headerColor, Color(50, 50, 50), Color(200, 200, 200))
+        styleWindowControlButton(maximizeButton, headerColor, Color(50, 50, 50), Color(200, 200, 200))
+        styleWindowControlButton(closeButton, headerColor, Color(180, 30, 30), Color(200, 200, 200), Color.WHITE)
+
         controlPanel.add(minimizeButton)
+        controlPanel.add(maximizeButton)
         controlPanel.add(closeButton)
         
         // Add components to header panel
@@ -249,6 +227,83 @@ class MainWindow : JFrame("PenguinClient") {
         
         return panel
     }
+
+    private fun createWindowControlButton(text: String, action: () -> Unit): JButton {
+        val button = JButton(text)
+        button.font = Font("Arial", Font.BOLD, 14) // Consistent font for controls
+        button.background = headerColor
+        button.border = BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        button.isFocusPainted = false
+        button.addActionListener { action() }
+        return button
+    }
+
+    private fun styleWindowControlButton(
+        button: JButton,
+        baseBg: Color,
+        hoverBg: Color,
+        baseFg: Color,
+        hoverFg: Color = baseFg // Default hover foreground is same as base
+    ) {
+        button.foreground = baseFg
+        var timer: Timer? = null
+
+        button.addMouseListener(object : MouseAdapter() {
+            override fun mouseEntered(e: MouseEvent) {
+                timer?.stop()
+                timer = Timer(10) { // Adjust delay for smoothness
+                    val currentBg = button.background
+                    val currentFg = button.foreground
+
+                    val nextBg = Color(
+                        currentBg.red + (hoverBg.red - currentBg.red) / 5,
+                        currentBg.green + (hoverBg.green - currentBg.green) / 5,
+                        currentBg.blue + (hoverBg.blue - currentBg.blue) / 5
+                    )
+                    val nextFg = Color(
+                        currentFg.red + (hoverFg.red - currentFg.red) / 5,
+                        currentFg.green + (hoverFg.green - currentFg.green) / 5,
+                        currentFg.blue + (hoverFg.blue - currentFg.blue) / 5
+                    )
+
+                    button.background = nextBg
+                    button.foreground = nextFg
+
+                    if (button.background.rgb == hoverBg.rgb && button.foreground.rgb == hoverFg.rgb) {
+                        (it.source as Timer).stop()
+                    }
+                }
+                timer?.start()
+            }
+
+            override fun mouseExited(e: MouseEvent) {
+                timer?.stop()
+                timer = Timer(10) { // Adjust delay for smoothness
+                    val currentBg = button.background
+                    val currentFg = button.foreground
+
+                    val nextBg = Color(
+                        currentBg.red + (baseBg.red - currentBg.red) / 5,
+                        currentBg.green + (baseBg.green - currentBg.green) / 5,
+                        currentBg.blue + (baseBg.blue - currentBg.blue) / 5
+                    )
+                    val nextFg = Color(
+                        currentFg.red + (baseFg.red - currentFg.red) / 5,
+                        currentFg.green + (baseFg.green - currentFg.green) / 5,
+                        currentFg.blue + (baseFg.blue - currentFg.blue) / 5
+                    )
+
+                    button.background = nextBg
+                    button.foreground = nextFg
+
+                    if (button.background.rgb == baseBg.rgb && button.foreground.rgb == baseFg.rgb) {
+                        (it.source as Timer).stop()
+                    }
+                }
+                timer?.start()
+            }
+        })
+    }
     
     private fun createTabbedPane(): JTabbedPane {
         // Create a custom styled tabbed pane with glow effect
@@ -266,13 +321,11 @@ class MainWindow : JFrame("PenguinClient") {
                 )
                 g2d.paint = gradient
                 g2d.fillRect(0, 0, width, 30)
-                
-                // Add subtle glow at the bottom of the tab bar
-                for (i in 1..5) {
-                    val alpha = 50 - i * 10
-                    g2d.color = Color(255, 255, 255, alpha)
-                    g2d.drawLine(0, 29 + i, width, 29 + i)
-                }
+
+                // Simplified subtle glow at the bottom of the tab bar
+                g2d.color = Color(255, 255, 255, 30) // Single, subtle glow line
+                g2d.drawLine(0, 30, width, 30)
+                g2d.drawLine(0, 31, width, 31) // A slightly thicker feel
             }
         }
         
@@ -282,10 +335,32 @@ class MainWindow : JFrame("PenguinClient") {
         
         // Add a tab for each category with custom styling
         Category.values().forEach { category ->
-            val scrollPane = JScrollPane(CategoryPanel(category))
+            val categoryPanel = CategoryPanel(category)
+            val scrollPane = JScrollPane(categoryPanel)
             scrollPane.border = null
-            scrollPane.background = backgroundColor
+            scrollPane.background = backgroundColor // Background for the scrollpane itself
+            scrollPane.viewport.background = backgroundColor // Background for the viewport
             scrollPane.verticalScrollBar.unitIncrement = 16
+            // Style the scrollbar to match the theme
+            scrollPane.verticalScrollBar.ui = object : javax.swing.plaf.basic.BasicScrollBarUI() {
+                override fun configureScrollBarColors() {
+                    this.thumbColor = tabSelectedColor // Color for the scrollbar thumb
+                    this.trackColor = tabBackgroundColor // Color for the scrollbar track
+                }
+                override fun createDecreaseButton(orientation: Int): JButton {
+                    return createZeroButton()
+                }
+                override fun createIncreaseButton(orientation: Int): JButton {
+                    return createZeroButton()
+                }
+                private fun createZeroButton(): JButton {
+                    val button = JButton()
+                    button.preferredSize = Dimension(0,0)
+                    button.minimumSize = Dimension(0,0)
+                    button.maximumSize = Dimension(0,0)
+                    return button
+                }
+            }
             
             // Create a custom tab component with glow
             val tabLabel = object : JLabel(category.displayName) {
@@ -297,16 +372,13 @@ class MainWindow : JFrame("PenguinClient") {
                     
                     // Add a bottom border to the selected tab with glow
                     if (tabbedPane.selectedComponent == scrollPane) {
-                        // Draw main line
-                        g2d.color = accentColor
-                        g2d.fillRect(0, height - 3, width, 3)
-                        
-                        // Draw glow effect
-                        for (i in 1..5) {
-                            val alpha = 50 - i * 10
-                            g2d.color = Color(255, 255, 255, alpha)
-                            g2d.fillRect(0, height - 3 - i, width, 1)
-                        }
+                        // Draw main line (thicker and brighter for selection)
+                        g2d.color = accentColor.brighter() 
+                        g2d.fillRect(0, height - 4, width, 4) // Slightly thicker selected indicator
+
+                        // Simplified glow effect
+                        g2d.color = Color(255, 255, 255, 70) // Brighter glow for selected tab
+                        g2d.fillRect(0, height - 5, width, 1) // Single line glow above the main line
                     }
                 }
             }
