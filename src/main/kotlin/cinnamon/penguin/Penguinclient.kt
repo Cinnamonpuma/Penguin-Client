@@ -1,10 +1,10 @@
-package penguin.client
+package cinnamon.penguin
 
 import net.fabricmc.api.ModInitializer
 import org.slf4j.LoggerFactory
 
-object PenguinCient : ModInitializer {
-    private val logger = LoggerFactory.getLogger("penguin-cient")
+object Penguinclient : ModInitializer {
+    private val logger = LoggerFactory.getLogger("penguinclient")
 
 	override fun onInitialize() {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.

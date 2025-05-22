@@ -23,7 +23,7 @@ loom {
 	splitEnvironmentSourceSets()
 
 	mods {
-		"penguin-cient" {
+		"penguinclient" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}

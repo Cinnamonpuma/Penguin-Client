@@ -1,6 +1,6 @@
 {
 	"required": true,
-	"package": "penguin.client.mixin.client",
+	"package": "cinnamon.penguin.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"ExampleClientMixin"
