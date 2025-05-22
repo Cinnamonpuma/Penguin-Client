@@ -12,6 +12,8 @@ import javax.swing.*
 import javax.swing.border.EmptyBorder
 import javax.swing.border.TitledBorder
 import org.lwjgl.glfw.GLFW
+import cinnamon.penguin.gui.common.RoundedButton // Added import
+import cinnamon.penguin.gui.common.RoundedToggleButton // Added import
 
 /**
  * Panel for displaying modules in a category with Lunar Client-inspired styling
@@ -19,16 +21,95 @@ import org.lwjgl.glfw.GLFW
 class CategoryPanel(private val category: Category) : JPanel() {
     // Colors and styling - Lunar Client inspired
     // Colors and styling - Black and white with glow
-    private val backgroundColor = Color(15, 15, 15) // Near black
-    private val foregroundColor = Color(240, 240, 240) // Near white
-    private val accentColor = Color(255, 255, 255) // Pure white for accent/glow
-    private val enabledColor = Color(220, 220, 220) // Light gray for enabled state
-    private val disabledColor = Color(40, 40, 40) // Dark gray for disabled state
-    private val hoverColor = Color(60, 60, 60) // Slightly lighter gray for hover
-    private val buttonIconColor = Color(200, 200, 200) // Light gray for icons
+    private val backgroundColor = Color(0, 0, 0) // black
+    private val foregroundColor = Color(255, 255, 255) // white
+    private val accentColor = Color(255, 255, 255) // white
+    private val enabledColor = Color(50, 50, 50) // dark grey
+    private val disabledColor = Color(20, 20, 20) // very dark grey
+    private val hoverColor = Color(70, 70, 70) // grey
+    private val buttonIconColor = Color(255, 255, 255) // white
 
     
     private val moduleButtons = mutableMapOf<Module, JToggleButton>()
+    private val activeSettingsTimers = mutableMapOf<Module, Timer>()
+    private val openSettingsPanel = mutableMapOf<Module, JPanel>() // Stores the actual content panel for settings
+
+    // Inline Settings Panel for AutoClicker
+    private inner class InlineAutoClickerSettingsPanel(
+        private val module: cinnamon.penguin.module.modules.combat.AutoClickerModule
+    ) : JPanel() {
+        init {
+            // Replicate UI from showAutoClickerSettings, use theme colors
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            background = this@CategoryPanel.backgroundColor.darker() // Slightly different background for settings area
+            border = EmptyBorder(10, 15, 10, 15)
+            alignmentX = Component.CENTER_ALIGNMENT
+
+            // Title (Optional, can be omitted for inline)
+            // val titleLabel = JLabel("AutoClicker Settings") ... add(titleLabel)
+
+            // CPS Slider
+            val cpsPanel = JPanel(BorderLayout(5, 5))
+            cpsPanel.isOpaque = false // Children of opaque panel
+            cpsPanel.border = BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color(70, 70, 70)), // Darker border
+                "Clicks Per Second",
+                TitledBorder.LEFT, TitledBorder.TOP,
+                Font("Arial", Font.BOLD, 11), this@CategoryPanel.foregroundColor
+            )
+            val cpsLabel = JLabel("${module.clicksPerSecond} CPS")
+            cpsLabel.foreground = this@CategoryPanel.foregroundColor
+            cpsLabel.font = Font("Arial", Font.PLAIN, 11)
+            cpsLabel.horizontalAlignment = SwingConstants.CENTER
+            val cpsSlider = JSlider(JSlider.HORIZONTAL, 1, 20, module.clicksPerSecond)
+            cpsSlider.isOpaque = false
+            cpsSlider.addChangeListener {
+                module.clicksPerSecond = cpsSlider.value
+                cpsLabel.text = "${module.clicksPerSecond} CPS"
+            }
+            cpsPanel.add(cpsLabel, BorderLayout.NORTH)
+            cpsPanel.add(cpsSlider, BorderLayout.CENTER)
+            add(cpsPanel)
+
+            // Randomization Slider
+            val randomPanel = JPanel(BorderLayout(5, 5))
+            randomPanel.isOpaque = false
+            randomPanel.border = BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color(70, 70, 70)),
+                "Randomization",
+                TitledBorder.LEFT, TitledBorder.TOP,
+                Font("Arial", Font.BOLD, 11), this@CategoryPanel.foregroundColor
+            )
+            val randomLabel = JLabel("${module.randomization}% Variation")
+            randomLabel.foreground = this@CategoryPanel.foregroundColor
+            randomLabel.font = Font("Arial", Font.PLAIN, 11)
+            randomLabel.horizontalAlignment = SwingConstants.CENTER
+            val randomSlider = JSlider(JSlider.HORIZONTAL, 0, 50, module.randomization)
+            randomSlider.isOpaque = false
+            randomSlider.addChangeListener {
+                module.randomization = randomSlider.value
+                randomLabel.text = "${module.randomization}% Variation"
+            }
+            randomPanel.add(randomLabel, BorderLayout.NORTH)
+            randomPanel.add(randomSlider, BorderLayout.CENTER)
+            add(Box.createRigidArea(Dimension(0, 5)))
+            add(randomPanel)
+
+            // Right Click Option
+            val optionsPanel = JPanel(FlowLayout(FlowLayout.LEFT))
+            optionsPanel.isOpaque = false
+            // optionsPanel.border = BorderFactory.createTitledBorder(...) // Optional border for options
+            val rightClickCheckbox = JCheckBox("Right Click Instead")
+            rightClickCheckbox.isOpaque = false
+            rightClickCheckbox.foreground = this@CategoryPanel.foregroundColor
+            rightClickCheckbox.font = Font("Arial", Font.PLAIN, 11)
+            rightClickCheckbox.isSelected = module.rightClick
+            rightClickCheckbox.addActionListener { module.rightClick = rightClickCheckbox.isSelected }
+            optionsPanel.add(rightClickCheckbox)
+            add(Box.createRigidArea(Dimension(0, 5)))
+            add(optionsPanel)
+        }
+    }
     
     init {
         layout = BoxLayout(this, BoxLayout.Y_AXIS)
@@ -42,24 +123,23 @@ class CategoryPanel(private val category: Category) : JPanel() {
             val label = JLabel("No modules in this category")
             label.foreground = foregroundColor
             label.font = Font("Arial", Font.PLAIN, 14)
-            label.alignmentX = Component.LEFT_ALIGNMENT
+            label.alignmentX = Component.CENTER_ALIGNMENT // Center the label
             add(label)
         } else {
             // Add each module as a toggle button
             modules.forEach { module ->
                 val panel = JPanel(BorderLayout())
                 panel.background = backgroundColor
-                panel.alignmentX = Component.LEFT_ALIGNMENT
-                panel.maximumSize = Dimension(Integer.MAX_VALUE, 45)
-                panel.border = BorderFactory.createMatteBorder(0, 0, 1, 0, Color(20, 20, 20))
+                panel.alignmentX = Component.CENTER_ALIGNMENT // Center the panel
+                // panel.maximumSize will be set after components are added to determine preferredWidth
+                panel.border = BorderFactory.createMatteBorder(0, 0, 1, 0, Color(40, 40, 40)) // Adjusted border color
                 
-                val button = JToggleButton(module.name)
+                val button = RoundedToggleButton(module.name) // Use RoundedToggleButton
                 button.isSelected = module.enabled
                 button.background = if (module.enabled) enabledColor else disabledColor
-                button.foreground = if (module.enabled) Color.WHITE else foregroundColor
+                button.foreground = foregroundColor // Text on buttons should be white
                 button.font = Font("Arial", Font.BOLD, 13)
-                button.isFocusPainted = false
-                button.border = BorderFactory.createEmptyBorder(8, 15, 8, 15)
+                // isFocusPainted and border are handled in RoundedToggleButton init
                 
                 // Create buttonPanel here before referencing it
                 val buttonPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 0, 0))
@@ -71,26 +151,35 @@ class CategoryPanel(private val category: Category) : JPanel() {
                 button.addActionListener {
                     module.toggle()
                     button.background = if (module.enabled) enabledColor else disabledColor
-                    button.foreground = if (module.enabled) Color.WHITE else foregroundColor
+                    button.foreground = foregroundColor // Text on buttons should be white
                     
                     // Add glow effect to button panel when enabled
                     if (module.enabled) {
-                        buttonPanel.border = object : javax.swing.border.AbstractBorder() {
-                            private val glowColor = Color(255, 255, 255, 70) // Single color for glow
-                            private val thickness = 3 // Thickness of the glow
+                        val glowLayers = 4 // Number of layers for the diffused glow
+                        val baseAlpha = 30 // Base alpha for the outermost glow layer
+                        val arc = 10 // Corner radius for the glow, matching buttons
 
+                        buttonPanel.border = object : javax.swing.border.AbstractBorder() {
                             override fun paintBorder(c: Component, g: Graphics, x: Int, y: Int, width: Int, height: Int) {
-                                val g2d = g as Graphics2D
+                                val g2d = g.create() as Graphics2D
                                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-                                g2d.color = glowColor
-                                // Draw a thicker line around the component
-                                for (i in 0 until thickness) {
-                                    g2d.drawRect(x + i, y + i, width - 1 - i * 2, height - 1 - i * 2)
+                                
+                                for (i in 0 until glowLayers) {
+                                    val currentAlpha = baseAlpha - (i * (baseAlpha / glowLayers))
+                                    if (currentAlpha <= 0) continue // Don't draw if alpha is zero or less
+                                    
+                                    g2d.color = Color(255, 255, 255, currentAlpha)
+                                    // Each layer is slightly inset from the previous one
+                                    // The glow should expand outwards, so we draw from outside-in, or adjust x,y,width,height
+                                    // Let's draw from component edge inwards for simplicity of border insets
+                                    g2d.drawRoundRect(x + i, y + i, width - 1 - (i * 2), height - 1 - (i * 2), arc, arc)
                                 }
+                                g2d.dispose()
                             }
 
                             override fun getBorderInsets(c: Component): Insets {
-                                return Insets(thickness, thickness, thickness, thickness)
+                                // Insets should match the number of layers to ensure content is not overlapped
+                                return Insets(glowLayers, glowLayers, glowLayers, glowLayers)
                             }
                         }
                     } else {
@@ -101,10 +190,9 @@ class CategoryPanel(private val category: Category) : JPanel() {
                 moduleButtons[module] = button
                 
                 // Add settings button with Lunar-style icon
-                val settingsButton = JButton()
+                val settingsButton = RoundedButton() // Use RoundedButton
                 settingsButton.background = backgroundColor
-                settingsButton.isFocusPainted = false
-                settingsButton.border = BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                // isFocusPainted and border are handled in RoundedButton init
                 settingsButton.preferredSize = Dimension(30, 30)
                 
                 // Custom paint for gear icon
@@ -115,36 +203,54 @@ class CategoryPanel(private val category: Category) : JPanel() {
                     override fun paintIcon(c: Component, g: Graphics, x: Int, y: Int) {
                         val g2d = g as Graphics2D
                         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+                        g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE) // For cleaner strokes
                         
-                        // Draw gear icon
                         g2d.color = buttonIconColor
                         val centerX = x + 8
                         val centerY = y + 8
                         val outerRadius = 7
-                        val innerRadius = 3
-                        val toothCount = 8
+                        val innerRadius = 2.5f // Made slightly smaller for a cleaner look
+                        val toothHeight = 2.5f
+                        val toothCount = 6 // Reduced tooth count for a less cluttered look
+
+                        // Draw gear body (a filled circle)
+                        g2d.fillOval(centerX - outerRadius, centerY - outerRadius, outerRadius * 2, outerRadius * 2)
                         
-                        // Draw outer circle with teeth
+                        // Draw teeth (as filled rectangles extending from the center)
+                        // Erase parts of the outer circle to create teeth
+                        g2d.color = backgroundColor // Use background to "cut out" teeth spaces
+                        val toothAngleStep = 2 * Math.PI / (toothCount * 2) // Angle for each half-tooth (space and tooth)
+                        
                         for (i in 0 until toothCount * 2) {
-                            val angle = Math.PI * i / toothCount
-                            val radius = if (i % 2 == 0) outerRadius else outerRadius - 2
-                            val pointX = centerX + (radius * Math.cos(angle)).toInt()
-                            val pointY = centerY + (radius * Math.sin(angle)).toInt()
-                            
-                            if (i == 0) {
-                                g2d.drawLine(centerX, centerY, pointX, pointY)
-                            } else {
-                                val prevAngle = Math.PI * (i - 1) / toothCount
-                                val prevRadius = if ((i - 1) % 2 == 0) outerRadius else outerRadius - 2
-                                val prevX = centerX + (prevRadius * Math.cos(prevAngle)).toInt()
-                                val prevY = centerY + (prevRadius * Math.sin(prevAngle)).toInt()
+                            if (i % 2 == 0) { // This is a space between teeth
+                                val angle1 = i * toothAngleStep
+                                val angle2 = (i + 1) * toothAngleStep
                                 
-                                g2d.drawLine(prevX, prevY, pointX, pointY)
+                                val path = java.awt.geom.Path2D.Double()
+                                path.moveTo(centerX.toDouble(), centerY.toDouble())
+                                path.lineTo(centerX + (outerRadius + toothHeight) * Math.cos(angle1), centerY + (outerRadius + toothHeight) * Math.sin(angle1))
+                                path.lineTo(centerX + (outerRadius + toothHeight) * Math.cos(angle2), centerY + (outerRadius + toothHeight) * Math.sin(angle2))
+                                path.closePath()
+                                g2d.fill(path)
                             }
                         }
-                        
-                        // Draw inner circle
-                        g2d.fillOval(centerX - innerRadius, centerY - innerRadius, innerRadius * 2, innerRadius * 2)
+
+                        // Draw inner hole (filled with background color to appear as a hole)
+                        g2d.color = backgroundColor 
+                        g2d.fillOval(
+                            (centerX - innerRadius).toInt(), 
+                            (centerY - innerRadius).toInt(), 
+                            (innerRadius * 2).toInt(), 
+                            (innerRadius * 2).toInt()
+                        )
+                        // Re-draw a thin border for the inner circle if needed, or leave as a hole
+                        g2d.color = buttonIconColor
+                        g2d.drawOval(
+                            (centerX - innerRadius).toInt(),
+                            (centerY - innerRadius).toInt(),
+                            (innerRadius * 2).toInt(),
+                            (innerRadius * 2).toInt()
+                        )
                     }
                 }
                 
@@ -152,20 +258,22 @@ class CategoryPanel(private val category: Category) : JPanel() {
                 addHoverTransition(settingsButton, backgroundColor, hoverColor)
                 
                 settingsButton.addActionListener {
-                    // Open module settings dialog
                     when (module) {
                         is cinnamon.penguin.module.modules.combat.AutoClickerModule -> {
-                            showAutoClickerSettings(module)
+                            toggleInlineSettings(module, panel) // 'panel' is the moduleEntryPanel
                         }
-                        // Add cases for other module types as needed
+                        // Add cases for other module types as needed for their specific settings UI
+                        else -> {
+                            // Placeholder for modules without specific inline UI or if dialog is preferred
+                             println("No inline settings UI for ${module.name}")
+                        }
                     }
                 }
                 
                 // Add keybind button with keyboard icon
-                val keybindButton = JButton()
+                val keybindButton = RoundedButton() // Use RoundedButton
                 keybindButton.background = backgroundColor
-                keybindButton.isFocusPainted = false
-                keybindButton.border = BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                // isFocusPainted and border are handled in RoundedButton init
                 keybindButton.preferredSize = Dimension(30, 30)
                 
                 // Custom paint for keyboard icon
@@ -179,14 +287,25 @@ class CategoryPanel(private val category: Category) : JPanel() {
                         
                         // Draw keyboard icon
                         g2d.color = buttonIconColor
-                        
-                        // Draw keyboard outline
-                        g2d.drawRoundRect(x + 2, y + 5, 12, 8, 2, 2)
-                        
-                        // Draw keys
-                        g2d.drawLine(x + 6, y + 5, x + 6, y + 13)
-                        g2d.drawLine(x + 10, y + 5, x + 10, y + 13)
-                        g2d.drawLine(x + 2, y + 9, x + 14, y + 9)
+                        g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE)
+
+
+                        // Keyboard body (a filled rounded rectangle)
+                        g2d.fillRoundRect(x + 1, y + 4, 14, 8, 3, 3)
+
+                        // Keys (small filled rectangles, "cut out" with background color)
+                        g2d.color = backgroundColor // Use background color to draw keys
+                        val keyWidth = 3
+                        val keyHeight = 2
+                        val keyPadding = 1
+
+                        // Top row of keys
+                        g2d.fillRect(x + 3, y + 5, keyWidth, keyHeight)
+                        g2d.fillRect(x + 3 + keyWidth + keyPadding, y + 5, keyWidth, keyHeight)
+                        g2d.fillRect(x + 3 + (keyWidth + keyPadding) * 2, y + 5, keyWidth, keyHeight)
+
+                        // Bottom row of keys (space bar like)
+                        g2d.fillRect(x + 5, y + 5 + keyHeight + keyPadding, keyWidth + keyPadding + keyWidth/2, keyHeight)
                     }
                 }
                 
@@ -210,175 +329,115 @@ class CategoryPanel(private val category: Category) : JPanel() {
                 }
                 
                 panel.add(buttonPanel, BorderLayout.EAST)
-                
-                add(panel)
-                add(Box.createRigidArea(Dimension(0, 5)))
+
+                // To ensure the maximumSize change takes effect after components are added and preferred size is calculated:
+                // It might be better to set maximumSize *after* adding all child components to 'panel',
+                // or by creating a wrapper panel if direct preferredSize is tricky with BorderLayout.
+                // However, let's try this first. If it doesn't work, we might need to explicitly set a preferred width.
+                // For now, we also need to ensure that the panel's preferred width is not itself Integer.MAX_VALUE.
+                // Let's re-evaluate maximumSize after children are added.
+                val prefSize = panel.preferredSize
+                panel.maximumSize = Dimension(prefSize.width, 45)
+
+
+                add(panel) // This is the moduleEntryPanel
+
+                // Settings Container - initially empty and not visible
+                val settingsContainer = JPanel(BorderLayout())
+                settingsContainer.isOpaque = false
+                settingsContainer.name = "settingsContainer_${module.name}" // For easier identification if needed
+                settingsContainer.maximumSize = Dimension(panel.maximumSize.width, 0) // Start collapsed
+                settingsContainer.preferredSize = Dimension(panel.maximumSize.width, 0)
+                add(settingsContainer)
+
+                add(Box.createRigidArea(Dimension(0, 5))) // Keep the spacing
             }
         }
     }
-    
-    /**
-     * Show settings dialog for AutoClicker module with Lunar-style UI
-     */
-    private fun showAutoClickerSettings(module: cinnamon.penguin.module.modules.combat.AutoClickerModule) {
-        val dialog = JDialog((SwingUtilities.getWindowAncestor(this) as Frame), "AutoClicker Settings", true)
-        dialog.layout = BorderLayout()
-        dialog.size = Dimension(350, 280)
-        dialog.setLocationRelativeTo(this)
 
-        // Add a simplified glow effect to the dialog
-        dialog.rootPane.border = object : javax.swing.border.AbstractBorder() {
-            private val glowColor = Color(255, 255, 255, 50) // Single color for glow
-            private val thickness = 4 // Thickness of the glow
+    private fun toggleInlineSettings(module: cinnamon.penguin.module.modules.combat.AutoClickerModule, moduleEntryPanel: JPanel) {
+        activeSettingsTimers[module]?.stop() // Stop any existing animation for this module
 
-            override fun paintBorder(c: Component, g: Graphics, x: Int, y: Int, width: Int, height: Int) {
-                val g2d = g as Graphics2D
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-                g2d.color = glowColor
-                for (i in 0 until thickness) {
-                    g2d.drawRoundRect(x + i, y + i, width - 1 - i * 2, height - 1 - i * 2, 8, 8) // Rounded corners
+        val settingsContainer = (moduleEntryPanel.parent as JPanel).components.filterIsInstance<JPanel>()
+            .find { it.name == "settingsContainer_${module.name}" } ?: return
+
+
+        val isExpanding = openSettingsPanel[module] == null || !openSettingsPanel[module]!!.isVisible
+        val currentContent = openSettingsPanel[module]
+
+        if (isExpanding) {
+            if (currentContent == null) {
+                val newSettingsPanel = InlineAutoClickerSettingsPanel(module)
+                newSettingsPanel.alignmentX = Component.CENTER_ALIGNMENT
+                openSettingsPanel[module] = newSettingsPanel
+                settingsContainer.add(newSettingsPanel, BorderLayout.CENTER)
+            }
+            val content = openSettingsPanel[module]!!
+            content.isVisible = true
+            val targetHeight = content.preferredSize.height
+            animatePanel(settingsContainer, moduleEntryPanel.width, targetHeight, true, module)
+        } else {
+            // Collapse
+            val content = openSettingsPanel[module]
+            if (content != null) {
+                animatePanel(settingsContainer, moduleEntryPanel.width, 0, false, module) {
+                    content.isVisible = false
+                    settingsContainer.removeAll() // Remove content after collapse
+                    openSettingsPanel.remove(module)
+                    settingsContainer.revalidate()
+                    settingsContainer.repaint()
                 }
             }
+        }
+    }
 
-            override fun getBorderInsets(c: Component): Insets {
-                return Insets(thickness, thickness, thickness, thickness)
+    private fun animatePanel(
+        container: JPanel, 
+        targetWidth: Int, 
+        targetHeight: Int, 
+        expand: Boolean, 
+        module: Module,
+        onCompletion: (() -> Unit)? = null
+    ) {
+        val animationSteps = 20 // Number of steps for the animation
+        val stepDelay = 10 // Milliseconds between steps
+
+        val initialHeight = container.preferredSize.height
+        val heightChangePerStep = (targetHeight - initialHeight) / animationSteps
+        val stepKey = "animationStep_${module.name}" // Unique key for the container's property
+
+        val timer = Timer(stepDelay) { timerEvent -> // Renamed 'it' to 'timerEvent' for clarity
+            val currentStep = (container.getClientProperty(stepKey) as? Int ?: 0) + 1
+            var newHeight = initialHeight + (heightChangePerStep * currentStep)
+
+            if ((expand && newHeight >= targetHeight) || (!expand && newHeight <= targetHeight)) {
+                newHeight = targetHeight
+                (timerEvent.source as Timer).stop() // Stop the timer
+                activeSettingsTimers.remove(module)
+                container.putClientProperty(stepKey, null) // Clean up property
+                onCompletion?.invoke()
+            } else {
+                container.putClientProperty(stepKey, currentStep) // Update step property on container
             }
+
+            container.preferredSize = Dimension(targetWidth, newHeight)
+            container.maximumSize = Dimension(targetWidth, newHeight)
+            container.revalidate()
+            
+            // Revalidate the parent scroll pane's viewport if CategoryPanel is in one
+            (this@CategoryPanel.parent?.parent as? JViewport)?.revalidate()
+            (this@CategoryPanel.parent?.parent as? JViewport)?.repaint()
+            this@CategoryPanel.revalidate() // Revalidate CategoryPanel itself
+            this@CategoryPanel.repaint()
         }
-        
-        val panel = JPanel()
-        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
-        panel.background = backgroundColor
-        panel.border = EmptyBorder(15, 15, 15, 15)
-        
-        // Title
-        val titleLabel = JLabel("AutoClicker Settings")
-        titleLabel.foreground = accentColor
-        titleLabel.font = Font("Arial", Font.BOLD, 16)
-        titleLabel.alignmentX = Component.CENTER_ALIGNMENT
-        titleLabel.border = EmptyBorder(0, 0, 15, 0)
-        
-        // CPS Slider
-        val cpsPanel = JPanel(BorderLayout(5, 5))
-        cpsPanel.background = backgroundColor
-        cpsPanel.border = BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(Color(60, 60, 60)),
-            "Clicks Per Second",
-            TitledBorder.LEFT,
-            TitledBorder.TOP,
-            Font("Arial", Font.BOLD, 12),
-            foregroundColor
-        )
-        
-        val cpsLabel = JLabel("${module.clicksPerSecond} CPS")
-        cpsLabel.foreground = foregroundColor
-        cpsLabel.font = Font("Arial", Font.PLAIN, 12)
-        cpsLabel.horizontalAlignment = SwingConstants.CENTER
-        
-        val cpsSlider = JSlider(JSlider.HORIZONTAL, 1, 20, module.clicksPerSecond)
-        cpsSlider.background = backgroundColor
-        cpsSlider.foreground = foregroundColor
-        cpsSlider.paintTicks = true
-        cpsSlider.paintLabels = true
-        cpsSlider.majorTickSpacing = 5
-        cpsSlider.minorTickSpacing = 1
-        
-        cpsSlider.addChangeListener { 
-            module.clicksPerSecond = cpsSlider.value
-            cpsLabel.text = "${module.clicksPerSecond} CPS"
-        }
-        
-        cpsPanel.add(cpsLabel, BorderLayout.NORTH)
-        cpsPanel.add(cpsSlider, BorderLayout.CENTER)
-        
-        // Randomization Slider
-        val randomPanel = JPanel(BorderLayout(5, 5))
-        randomPanel.background = backgroundColor
-        randomPanel.border = BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(Color(60, 60, 60)),
-            "Randomization",
-            TitledBorder.LEFT,
-            TitledBorder.TOP,
-            Font("Arial", Font.BOLD, 12),
-            foregroundColor
-        )
-        
-        val randomLabel = JLabel("${module.randomization}% Variation")
-        randomLabel.foreground = foregroundColor
-        randomLabel.font = Font("Arial", Font.PLAIN, 12)
-        randomLabel.horizontalAlignment = SwingConstants.CENTER
-        
-        val randomSlider = JSlider(JSlider.HORIZONTAL, 0, 50, module.randomization)
-        randomSlider.background = backgroundColor
-        randomSlider.foreground = foregroundColor
-        randomSlider.paintTicks = true
-        randomSlider.paintLabels = true
-        randomSlider.majorTickSpacing = 10
-        randomSlider.minorTickSpacing = 5
-        
-        randomSlider.addChangeListener { 
-            module.randomization = randomSlider.value
-            randomLabel.text = "${module.randomization}% Variation"
-        }
-        
-        randomPanel.add(randomLabel, BorderLayout.NORTH)
-        randomPanel.add(randomSlider, BorderLayout.CENTER)
-        
-        // Right Click Option
-        val optionsPanel = JPanel()
-        optionsPanel.layout = BoxLayout(optionsPanel, BoxLayout.Y_AXIS)
-        optionsPanel.background = backgroundColor
-        optionsPanel.border = BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(Color(60, 60, 60)),
-            "Options",
-            TitledBorder.LEFT,
-            TitledBorder.TOP,
-            Font("Arial", Font.BOLD, 12),
-            foregroundColor
-        )
-        
-        val rightClickCheckbox = JCheckBox("Right Click Instead")
-        rightClickCheckbox.background = backgroundColor
-        rightClickCheckbox.foreground = foregroundColor
-        rightClickCheckbox.font = Font("Arial", Font.PLAIN, 12)
-        rightClickCheckbox.isSelected = module.rightClick
-        rightClickCheckbox.alignmentX = Component.LEFT_ALIGNMENT
-        rightClickCheckbox.addActionListener {
-            module.rightClick = rightClickCheckbox.isSelected
-        }
-        
-        val optionsSubPanel = JPanel(FlowLayout(FlowLayout.LEFT))
-        optionsSubPanel.background = backgroundColor
-        optionsSubPanel.add(rightClickCheckbox)
-        
-        optionsPanel.add(optionsSubPanel)
-        
-        // Add all panels to the main panel
-        panel.add(titleLabel)
-        panel.add(Box.createRigidArea(Dimension(0, 5)))
-        panel.add(cpsPanel)
-        panel.add(Box.createRigidArea(Dimension(0, 10)))
-        panel.add(randomPanel)
-        panel.add(Box.createRigidArea(Dimension(0, 10)))
-        panel.add(optionsPanel)
-        
-        // Add buttons
-        val buttonPanel = JPanel(FlowLayout(FlowLayout.CENTER))
-        buttonPanel.background = backgroundColor
-        
-        val closeButton = JButton("Close")
-        closeButton.background = accentColor
-        closeButton.foreground = Color.WHITE
-        closeButton.addActionListener {
-            dialog.dispose()
-        }
-        
-        buttonPanel.add(closeButton)
-        
-        dialog.add(panel, BorderLayout.CENTER)
-        dialog.add(buttonPanel, BorderLayout.SOUTH)
-        dialog.isVisible = true
+        container.putClientProperty(stepKey, 0) // Initialize step property on container
+        activeSettingsTimers[module] = timer
+        timer.start()
     }
     
+    // Remove or comment out the old showAutoClickerSettings dialog
+    // private fun showAutoClickerSettings(module: cinnamon.penguin.module.modules.combat.AutoClickerModule) { ... }
+
     /**
      * Show dialog for setting module keybind
      */
@@ -397,47 +456,58 @@ class CategoryPanel(private val category: Category) : JPanel() {
         label.horizontalAlignment = SwingConstants.CENTER
         label.font = Font("Arial", Font.PLAIN, 12)
         
+        var tempKeyCode = module.keyCode // Temporary storage for the keybind
+
         val keyField = JTextField()
         keyField.isEditable = false
-        keyField.background = backgroundColor.brighter()
+        keyField.background = Color(30,30,30) // Dark grey
         keyField.foreground = foregroundColor
         keyField.horizontalAlignment = SwingConstants.CENTER
         keyField.font = Font("Arial", Font.PLAIN, 12)
-        keyField.text = if (module.keyCode == GLFW.GLFW_KEY_UNKNOWN) "None" else 
-                        KeyEvent.getKeyText(module.keyCode)
+        keyField.text = if (tempKeyCode == GLFW.GLFW_KEY_UNKNOWN) "None" else KeyEvent.getKeyText(tempKeyCode)
         
         keyField.addKeyListener(object : KeyAdapter() {
             override fun keyPressed(e: KeyEvent) {
-                val keyCode = e.keyCode
-                keyField.text = KeyEvent.getKeyText(keyCode)
-                module.setKey(keyCode)
-                ModuleManager.saveModuleConfiguration() // Save after changing key
-                dialog.dispose()
+                tempKeyCode = e.keyCode
+                keyField.text = KeyEvent.getKeyText(tempKeyCode)
+                // Key is only set to module and saved when "OK" is pressed
             }
         })
         
         val buttonPanel = JPanel(FlowLayout(FlowLayout.CENTER))
         buttonPanel.background = backgroundColor
+
+        val okButton = RoundedButton("OK")
+        okButton.background = Color(30,30,30)
+        okButton.foreground = foregroundColor
+        okButton.font = Font("Arial", Font.PLAIN, 12)
+        okButton.addActionListener {
+            module.setKey(tempKeyCode)
+            ModuleManager.saveModuleConfiguration()
+            dialog.dispose()
+        }
         
-        val clearButton = JButton("Clear")
-        clearButton.background = backgroundColor.brighter()
+        val clearButton = RoundedButton("Clear") // Use RoundedButton
+        clearButton.background = Color(30,30,30) // Dark grey
         clearButton.foreground = foregroundColor
         clearButton.font = Font("Arial", Font.PLAIN, 12)
         clearButton.addActionListener {
+            tempKeyCode = GLFW.GLFW_KEY_UNKNOWN
             module.setKey(GLFW.GLFW_KEY_UNKNOWN)
             keyField.text = "None"
             ModuleManager.saveModuleConfiguration() // Save after clearing key
             dialog.dispose()
         }
         
-        val cancelButton = JButton("Cancel")
-        cancelButton.background = backgroundColor.brighter()
+        val cancelButton = RoundedButton("Cancel") // Use RoundedButton
+        cancelButton.background = Color(30,30,30) // Dark grey
         cancelButton.foreground = foregroundColor
         cancelButton.font = Font("Arial", Font.PLAIN, 12)
         cancelButton.addActionListener {
             dialog.dispose()
         }
         
+        buttonPanel.add(okButton) // Added OK button
         buttonPanel.add(clearButton)
         buttonPanel.add(cancelButton)
         
@@ -450,7 +520,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
     }
 
     private fun addHoverTransition(
-        component: JComponent,
+        component: JComponent, // Changed to JComponent to allow use with RoundedButton/RoundedToggleButton
         baseBg: Color,
         hoverBg: Color,
         condition: () -> Boolean = { true } // Optional condition to apply hover
@@ -460,17 +530,36 @@ class CategoryPanel(private val category: Category) : JPanel() {
 
         component.addMouseListener(object : MouseAdapter() {
             override fun mouseEntered(e: MouseEvent) {
-                if (!condition()) return
+                if (!condition()) {
+                    // if condition is false, ensure baseBg is set, especially for toggle buttons
+                    // that might have their background changed by selection state.
+                    if (component.background != baseBg && component.background != hoverBg) { // Avoid needless repaint
+                        // Only revert to baseBg if not selected or in a state that should keep another color
+                        if (component is JToggleButton && component.isSelected) {
+                            // For selected toggle buttons, hover should likely be on a different base (e.g. enabledColor.darker())
+                            // This part might need refinement based on desired hover behavior for selected toggles
+                        } else {
+                           // component.background = baseBg // Reverting to baseBg if condition not met
+                        }
+                    }
+                    return
+                }
                 timer?.stop()
                 timer = Timer(10) { // Adjust delay for smoothness
                     val currentBg = component.background
+                    val targetBg = if (component is JToggleButton && component.isSelected) {
+                        // Determine hover for selected state, e.g. a slightly brighter/darker version of enabledColor
+                        enabledColor.brighter() // Example: make it brighter when hovered and selected
+                    } else {
+                        hoverBg
+                    }
                     val nextBg = Color(
-                        currentBg.red + (hoverBg.red - currentBg.red) / 5,
-                        currentBg.green + (hoverBg.green - currentBg.green) / 5,
-                        currentBg.blue + (hoverBg.blue - currentBg.blue) / 5
+                        currentBg.red + (targetBg.red - currentBg.red) / 5,
+                        currentBg.green + (targetBg.green - currentBg.green) / 5,
+                        currentBg.blue + (targetBg.blue - currentBg.blue) / 5
                     )
                     component.background = nextBg
-                    if (component.background.rgb == hoverBg.rgb) {
+                    if (component.background.rgb == targetBg.rgb) {
                         (it.source as Timer).stop()
                     }
                 }
@@ -478,17 +567,22 @@ class CategoryPanel(private val category: Category) : JPanel() {
             }
 
             override fun mouseExited(e: MouseEvent) {
-                // No need to check condition for exiting, always revert if timer is running or bg is not base
                 timer?.stop()
+                val targetBgExit = if (component is JToggleButton && component.isSelected) {
+                     // When mouse exits a selected toggle button, it should revert to its selected color (e.g., enabledColor)
+                    enabledColor
+                } else {
+                    baseBg
+                }
                 timer = Timer(10) { // Adjust delay for smoothness
                     val currentBg = component.background
                     val nextBg = Color(
-                        currentBg.red + (baseBg.red - currentBg.red) / 5,
-                        currentBg.green + (baseBg.green - currentBg.green) / 5,
-                        currentBg.blue + (baseBg.blue - currentBg.blue) / 5
+                        currentBg.red + (targetBgExit.red - currentBg.red) / 5,
+                        currentBg.green + (targetBgExit.green - currentBg.green) / 5,
+                        currentBg.blue + (targetBgExit.blue - currentBg.blue) / 5
                     )
                     component.background = nextBg
-                    if (component.background.rgb == baseBg.rgb) {
+                    if (component.background.rgb == targetBgExit.rgb) {
                         (it.source as Timer).stop()
                     }
                 }
