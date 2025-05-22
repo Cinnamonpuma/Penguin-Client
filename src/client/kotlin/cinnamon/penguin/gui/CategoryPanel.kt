@@ -66,19 +66,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
                 buttonPanel.background = if (module.enabled) enabledColor else disabledColor
                 
                 // Add hover effect
-                button.addMouseListener(object : MouseAdapter() {
-                    override fun mouseEntered(e: MouseEvent) {
-                        if (!button.isSelected) {
-                            button.background = hoverColor
-                        }
-                    }
-                    
-                    override fun mouseExited(e: MouseEvent) {
-                        if (!button.isSelected) {
-                            button.background = disabledColor
-                        }
-                    }
-                })
+                addHoverTransition(button, disabledColor, hoverColor, condition = { !button.isSelected })
                 
                 button.addActionListener {
                     module.toggle()
@@ -88,24 +76,25 @@ class CategoryPanel(private val category: Category) : JPanel() {
                     // Add glow effect to button panel when enabled
                     if (module.enabled) {
                         buttonPanel.border = object : javax.swing.border.AbstractBorder() {
+                            private val glowColor = Color(255, 255, 255, 70) // Single color for glow
+                            private val thickness = 3 // Thickness of the glow
+
                             override fun paintBorder(c: Component, g: Graphics, x: Int, y: Int, width: Int, height: Int) {
                                 val g2d = g as Graphics2D
                                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-                                
-                                // Draw glow effect
-                                for (i in 1..5) {
-                                    val alpha = 50 - i * 10
-                                    g2d.color = Color(255, 255, 255, alpha)
-                                    g2d.drawRect(x + i, y + i, width - i * 2, height - i * 2)
+                                g2d.color = glowColor
+                                // Draw a thicker line around the component
+                                for (i in 0 until thickness) {
+                                    g2d.drawRect(x + i, y + i, width - 1 - i * 2, height - 1 - i * 2)
                                 }
                             }
-                            
+
                             override fun getBorderInsets(c: Component): Insets {
-                                return Insets(5, 5, 5, 5)
+                                return Insets(thickness, thickness, thickness, thickness)
                             }
                         }
                     } else {
-                        buttonPanel.border = null
+                        buttonPanel.border = null // Remove border when disabled
                     }
                 }
                 
@@ -160,15 +149,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
                 }
                 
                 // Add hover effect for settings button
-                settingsButton.addMouseListener(object : MouseAdapter() {
-                    override fun mouseEntered(e: MouseEvent) {
-                        settingsButton.background = hoverColor
-                    }
-                    
-                    override fun mouseExited(e: MouseEvent) {
-                        settingsButton.background = backgroundColor
-                    }
-                })
+                addHoverTransition(settingsButton, backgroundColor, hoverColor)
                 
                 settingsButton.addActionListener {
                     // Open module settings dialog
@@ -210,15 +191,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
                 }
                 
                 // Add hover effect for keybind button
-                keybindButton.addMouseListener(object : MouseAdapter() {
-                    override fun mouseEntered(e: MouseEvent) {
-                        keybindButton.background = hoverColor
-                    }
-                    
-                    override fun mouseExited(e: MouseEvent) {
-                        keybindButton.background = backgroundColor
-                    }
-                })
+                addHoverTransition(keybindButton, backgroundColor, hoverColor)
                 
                 keybindButton.addActionListener {
                     showKeybindDialog(module)
@@ -253,22 +226,22 @@ class CategoryPanel(private val category: Category) : JPanel() {
         dialog.size = Dimension(350, 280)
         dialog.setLocationRelativeTo(this)
 
-        // Add a glow effect to the dialog
+        // Add a simplified glow effect to the dialog
         dialog.rootPane.border = object : javax.swing.border.AbstractBorder() {
+            private val glowColor = Color(255, 255, 255, 50) // Single color for glow
+            private val thickness = 4 // Thickness of the glow
+
             override fun paintBorder(c: Component, g: Graphics, x: Int, y: Int, width: Int, height: Int) {
                 val g2d = g as Graphics2D
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-                
-                // Draw glow effect
-                for (i in 1..8) {
-                    val alpha = 30 - i * 3
-                    g2d.color = Color(255, 255, 255, alpha)
-                    g2d.drawRect(x + i, y + i, width - i * 2, height - i * 2)
+                g2d.color = glowColor
+                for (i in 0 until thickness) {
+                    g2d.drawRoundRect(x + i, y + i, width - 1 - i * 2, height - 1 - i * 2, 8, 8) // Rounded corners
                 }
             }
-            
+
             override fun getBorderInsets(c: Component): Insets {
-                return Insets(8, 8, 8, 8)
+                return Insets(thickness, thickness, thickness, thickness)
             }
         }
         
@@ -422,12 +395,14 @@ class CategoryPanel(private val category: Category) : JPanel() {
         val label = JLabel("Press any key to set the keybind for ${module.name}")
         label.foreground = foregroundColor
         label.horizontalAlignment = SwingConstants.CENTER
+        label.font = Font("Arial", Font.PLAIN, 12)
         
         val keyField = JTextField()
         keyField.isEditable = false
         keyField.background = backgroundColor.brighter()
         keyField.foreground = foregroundColor
         keyField.horizontalAlignment = SwingConstants.CENTER
+        keyField.font = Font("Arial", Font.PLAIN, 12)
         keyField.text = if (module.keyCode == GLFW.GLFW_KEY_UNKNOWN) "None" else 
                         KeyEvent.getKeyText(module.keyCode)
         
@@ -436,6 +411,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
                 val keyCode = e.keyCode
                 keyField.text = KeyEvent.getKeyText(keyCode)
                 module.setKey(keyCode)
+                ModuleManager.saveModuleConfiguration() // Save after changing key
                 dialog.dispose()
             }
         })
@@ -446,15 +422,18 @@ class CategoryPanel(private val category: Category) : JPanel() {
         val clearButton = JButton("Clear")
         clearButton.background = backgroundColor.brighter()
         clearButton.foreground = foregroundColor
+        clearButton.font = Font("Arial", Font.PLAIN, 12)
         clearButton.addActionListener {
             module.setKey(GLFW.GLFW_KEY_UNKNOWN)
             keyField.text = "None"
+            ModuleManager.saveModuleConfiguration() // Save after clearing key
             dialog.dispose()
         }
         
         val cancelButton = JButton("Cancel")
         cancelButton.background = backgroundColor.brighter()
         cancelButton.foreground = foregroundColor
+        cancelButton.font = Font("Arial", Font.PLAIN, 12)
         cancelButton.addActionListener {
             dialog.dispose()
         }
@@ -468,5 +447,53 @@ class CategoryPanel(private val category: Category) : JPanel() {
         
         dialog.add(panel)
         dialog.isVisible = true
+    }
+
+    private fun addHoverTransition(
+        component: JComponent,
+        baseBg: Color,
+        hoverBg: Color,
+        condition: () -> Boolean = { true } // Optional condition to apply hover
+    ) {
+        var timer: Timer? = null
+        component.background = baseBg // Ensure initial background is set
+
+        component.addMouseListener(object : MouseAdapter() {
+            override fun mouseEntered(e: MouseEvent) {
+                if (!condition()) return
+                timer?.stop()
+                timer = Timer(10) { // Adjust delay for smoothness
+                    val currentBg = component.background
+                    val nextBg = Color(
+                        currentBg.red + (hoverBg.red - currentBg.red) / 5,
+                        currentBg.green + (hoverBg.green - currentBg.green) / 5,
+                        currentBg.blue + (hoverBg.blue - currentBg.blue) / 5
+                    )
+                    component.background = nextBg
+                    if (component.background.rgb == hoverBg.rgb) {
+                        (it.source as Timer).stop()
+                    }
+                }
+                timer?.start()
+            }
+
+            override fun mouseExited(e: MouseEvent) {
+                // No need to check condition for exiting, always revert if timer is running or bg is not base
+                timer?.stop()
+                timer = Timer(10) { // Adjust delay for smoothness
+                    val currentBg = component.background
+                    val nextBg = Color(
+                        currentBg.red + (baseBg.red - currentBg.red) / 5,
+                        currentBg.green + (baseBg.green - currentBg.green) / 5,
+                        currentBg.blue + (baseBg.blue - currentBg.blue) / 5
+                    )
+                    component.background = nextBg
+                    if (component.background.rgb == baseBg.rgb) {
+                        (it.source as Timer).stop()
+                    }
+                }
+                timer?.start()
+            }
+        })
     }
 }
