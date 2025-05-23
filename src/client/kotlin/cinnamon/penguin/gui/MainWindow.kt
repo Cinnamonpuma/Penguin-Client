@@ -2,8 +2,7 @@ package cinnamon.penguin.gui
 
 import cinnamon.penguin.module.Category
 import java.awt.*
-import java.awt.event.WindowAdapter
-import java.awt.event.WindowEvent
+import java.awt.event.*
 import javax.swing.*
 import javax.swing.border.EmptyBorder
 import java.awt.image.BufferedImage
@@ -13,6 +12,11 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.MouseMotionAdapter
 import cinnamon.penguin.gui.common.RoundedButton // Added import
+import cinnamon.penguin.config.GlobalSettingsManager
+import cinnamon.penguin.input.KeyboardHandler
+import cinnamon.penguin.module.ModuleManager
+import org.lwjgl.glfw.GLFW
+import net.minecraft.client.util.InputUtil
 
 // Custom JPanel for rounded main window background
 private class RoundedMainPanel(layout: LayoutManager, private val cornerRadius: Int, private val bgColor: Color) : JPanel(layout) {
@@ -37,6 +41,14 @@ class MainWindow : JFrame("PenguinClient") {
     private val tabBackgroundColor = Color(45, 45, 45)
     private val tabSelectedColor = Color(60, 60, 60)
     private val headerColor = Color(25, 25, 25)
+
+    private fun getKeyDisplayName(keyCode: Int): String {
+        if (keyCode == GLFW.GLFW_KEY_UNKNOWN) return "NONE"
+        // Placeholder due to issues resolving InputUtil.getKeyName or InputUtil.getKey in the current environment.
+        // This allows the build to proceed. A proper fix requires investigating Minecraft version / mappings.
+        System.err.println("[PenguinClient] Warning: InputUtil methods for key name resolution are unavailable. Using placeholder for key code $keyCode.")
+        return "Key: $keyCode"
+    }
 
     init {
         try {
@@ -506,7 +518,7 @@ class MainWindow : JFrame("PenguinClient") {
         val dialog = JDialog(this, "Global Settings", true)
         dialog.isUndecorated = true // Important for custom border painting
         dialog.defaultCloseOperation = JDialog.DISPOSE_ON_CLOSE
-        dialog.setSize(450, 350) // Adjusted size
+        dialog.setSize(550, 450) // Adjusted size for new content
         dialog.setLocationRelativeTo(this)
         dialog.setBackground(Color(0,0,0,0)) // Make dialog background transparent for custom border
 
@@ -545,27 +557,174 @@ class MainWindow : JFrame("PenguinClient") {
             }
         }
 
-        val mainDialogPanel = JPanel(BorderLayout())
+        val mainDialogPanel = JPanel(GridBagLayout()) // Changed to GridBagLayout
         mainDialogPanel.isOpaque = false // The rootPane's border now paints the background
         // Use the value from the border instance for padding
         val borderInsets = dialog.rootPane.border.getBorderInsets(mainDialogPanel)
         mainDialogPanel.border = EmptyBorder(15 + borderInsets.top, 15 + borderInsets.left, 15 + borderInsets.bottom, 15 + borderInsets.right)
 
+        val gbc = GridBagConstraints()
+        gbc.insets = Insets(5, 5, 5, 5)
+        gbc.anchor = GridBagConstraints.WEST
 
         val titleLabel = JLabel("Global Settings")
         titleLabel.font = Font("Arial", Font.BOLD, 18)
-        titleLabel.setForeground(foregroundColor) // Updated
+        titleLabel.setForeground(foregroundColor)
         titleLabel.horizontalAlignment = SwingConstants.CENTER
-        titleLabel.setBorder(EmptyBorder(0,0,10,0))
-        mainDialogPanel.add(titleLabel, BorderLayout.NORTH)
-        
-        val placeholderLabel = JLabel("Global settings options will appear here.")
-        placeholderLabel.font = Font("Arial", Font.PLAIN, 14)
-        placeholderLabel.setForeground(foregroundColor) // Updated
-        placeholderLabel.horizontalAlignment = SwingConstants.CENTER
-        mainDialogPanel.add(placeholderLabel, BorderLayout.CENTER)
+        // titleLabel.setBorder(EmptyBorder(0,0,10,0)) // Removed, using GridBagConstraints
+        gbc.gridx = 0
+        gbc.gridy = 0
+        gbc.gridwidth = 2 // Span across two columns
+        gbc.anchor = GridBagConstraints.CENTER
+        mainDialogPanel.add(titleLabel, gbc)
 
-        val closeButton = JButton("Close") // Standard JButton, can be RoundedButton if preferred
+        // Reset anchor for subsequent components
+        gbc.anchor = GridBagConstraints.WEST
+        gbc.gridwidth = 1 // Reset gridwidth
+
+        // --- Global Keybind Setting ---
+        val globalKeyPanel = JPanel(FlowLayout(FlowLayout.LEFT, 0, 0))
+        globalKeyPanel.isOpaque = false
+        val globalKeyLabel = JLabel("Open GUI Key: ")
+        globalKeyLabel.font = Font("Arial", Font.PLAIN, 14)
+        globalKeyLabel.setForeground(foregroundColor)
+        globalKeyPanel.add(globalKeyLabel)
+
+        val currentGlobalKeyText = getKeyDisplayName(GlobalSettingsManager.currentConfig.guiOpenKeyCode)
+        val globalKeyButton = JButton(currentGlobalKeyText)
+        globalKeyButton.font = Font("Arial", Font.PLAIN, 12)
+        globalKeyButton.background = tabSelectedColor
+        globalKeyButton.foreground = foregroundColor
+        globalKeyButton.isFocusPainted = false
+        globalKeyButton.addActionListener {
+            val originalText = globalKeyButton.text
+            globalKeyButton.text = "Press any key..."
+            globalKeyButton.requestFocusInWindow()
+
+            // Remove previous listeners to avoid stacking them
+            globalKeyButton.keyListeners.forEach { globalKeyButton.removeKeyListener(it) }
+
+            val keyListener = object : KeyAdapter() {
+                override fun keyPressed(e: KeyEvent) {
+                    globalKeyButton.removeKeyListener(this) // Remove self
+
+                    if (e.keyCode == KeyEvent.VK_ESCAPE) {
+                        globalKeyButton.text = originalText
+                    } else {
+                        val mcKey = InputUtil.fromKeyCode(e.keyCode, e.extendedKeyCode)
+                        val finalKeyCode = mcKey.code
+
+                        KeyboardHandler.updateGuiOpenKey(finalKeyCode)
+                        globalKeyButton.text = getKeyDisplayName(finalKeyCode)
+                        println("Global GUI Key updated to: ${getKeyDisplayName(finalKeyCode)} (Code: $finalKeyCode)")
+                    }
+                }
+            }
+            globalKeyButton.addKeyListener(keyListener)
+        }
+        globalKeyPanel.add(globalKeyButton)
+
+        gbc.gridx = 0
+        gbc.gridy = 1
+        gbc.gridwidth = 2
+        gbc.fill = GridBagConstraints.HORIZONTAL
+        mainDialogPanel.add(globalKeyPanel, gbc)
+
+        // --- Module Keybinds Sub-header ---
+        val moduleKeybindsHeader = JLabel("Module Keybinds")
+        moduleKeybindsHeader.font = Font("Arial", Font.BOLD, 16)
+        moduleKeybindsHeader.setForeground(foregroundColor)
+        moduleKeybindsHeader.setBorder(EmptyBorder(10, 0, 5, 0)) // Add some top margin
+        gbc.gridx = 0
+        gbc.gridy = 2
+        gbc.gridwidth = 2
+        gbc.fill = GridBagConstraints.HORIZONTAL
+        mainDialogPanel.add(moduleKeybindsHeader, gbc)
+
+        // --- Module Keybinds Panel ---
+        val moduleKeybindsPanel = JPanel()
+        moduleKeybindsPanel.layout = BoxLayout(moduleKeybindsPanel, BoxLayout.Y_AXIS)
+        moduleKeybindsPanel.isOpaque = false // Transparent background
+        moduleKeybindsPanel.background = backgroundColor // Match dialog bg
+
+        ModuleManager.getModules().forEach { module ->
+            val modulePanel = JPanel(FlowLayout(FlowLayout.LEFT, 5, 2)) // Added small gaps
+            modulePanel.isOpaque = false
+            val moduleNameLabel = JLabel(module.name + ": ")
+            moduleNameLabel.font = Font("Arial", Font.PLAIN, 14)
+            moduleNameLabel.setForeground(foregroundColor)
+            modulePanel.add(moduleNameLabel)
+
+            val currentModuleKeyText = getKeyDisplayName(module.keyCode)
+            val moduleKeyButton = JButton(currentModuleKeyText)
+            moduleKeyButton.font = Font("Arial", Font.PLAIN, 12)
+            moduleKeyButton.background = tabSelectedColor
+            moduleKeyButton.foreground = foregroundColor
+            moduleKeyButton.isFocusPainted = false
+            val currentModule = module // Capture module for the listener
+            moduleKeyButton.addActionListener {
+                val originalText = moduleKeyButton.text
+                moduleKeyButton.text = "Press any key..."
+                moduleKeyButton.requestFocusInWindow()
+
+                // Remove previous listeners
+                moduleKeyButton.keyListeners.forEach { moduleKeyButton.removeKeyListener(it) }
+
+                val keyListener = object : KeyAdapter() {
+                    override fun keyPressed(e: KeyEvent) {
+                        moduleKeyButton.removeKeyListener(this) // Remove self
+
+                        if (e.keyCode == KeyEvent.VK_ESCAPE) {
+                            moduleKeyButton.text = originalText
+                        } else {
+                            val mcKey = InputUtil.fromKeyCode(e.keyCode, e.extendedKeyCode)
+                            val finalKeyCode = mcKey.code
+
+                            currentModule.setKey(finalKeyCode)
+                            ModuleManager.saveModuleConfiguration()
+                            moduleKeyButton.text = getKeyDisplayName(finalKeyCode)
+                            println("Key for ${currentModule.name} updated to: ${getKeyDisplayName(finalKeyCode)} (Code: $finalKeyCode)")
+                        }
+                    }
+                }
+                moduleKeyButton.addKeyListener(keyListener)
+            }
+            modulePanel.add(moduleKeyButton)
+            moduleKeybindsPanel.add(modulePanel)
+        }
+
+        val scrollPane = JScrollPane(moduleKeybindsPanel)
+        scrollPane.isOpaque = false
+        scrollPane.viewport.isOpaque = false
+        scrollPane.border = BorderFactory.createLineBorder(Color(50,50,50)) // Subtle border for scrollpane
+        scrollPane.verticalScrollBar.ui = object : javax.swing.plaf.basic.BasicScrollBarUI() {
+            override fun configureScrollBarColors() {
+                this.thumbColor = Color(80,80,80)
+                this.trackColor = Color(45,45,45)
+            }
+            override fun createDecreaseButton(orientation: Int) = createZeroButton()
+            override fun createIncreaseButton(orientation: Int) = createZeroButton()
+            private fun createZeroButton(): JButton {
+                val button = JButton()
+                button.preferredSize = Dimension(0,0)
+                button.minimumSize = Dimension(0,0)
+                button.maximumSize = Dimension(0,0)
+                return button
+            }
+        }
+        scrollPane.verticalScrollBar.unitIncrement = 16
+
+
+        gbc.gridx = 0
+        gbc.gridy = 3
+        gbc.gridwidth = 2
+        gbc.weightx = 1.0
+        gbc.weighty = 1.0
+        gbc.fill = GridBagConstraints.BOTH
+        mainDialogPanel.add(scrollPane, gbc)
+
+        // --- Close Button ---
+        val closeButton = JButton("Close")
         closeButton.setBackground(tabSelectedColor) // Updated
         closeButton.setForeground(foregroundColor) // Updated
         closeButton.font = Font("Arial", Font.PLAIN, 12) // Set font
