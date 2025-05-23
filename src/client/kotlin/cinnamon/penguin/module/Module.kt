@@ -5,6 +5,8 @@ import net.minecraft.client.option.KeyBinding
 import net.minecraft.client.util.InputUtil
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import org.lwjgl.glfw.GLFW
+import cinnamon.penguin.config.ConfigManager // Added import
+import cinnamon.penguin.module.ModuleManager // Added import
 
 /**
  * Base class for all modules in PenguinClient
@@ -37,6 +39,8 @@ abstract class Module(
         } else {
             onDisable()
         }
+        // Save config after state change
+        ConfigManager.saveConfig(ModuleManager)
     }
     
     /**
@@ -46,6 +50,7 @@ abstract class Module(
         if (!enabled) {
             enabled = true
             onEnable()
+            // ConfigManager.saveConfig(ModuleManager) // Decided against saving here to avoid double saves if called by loadConfig
         }
     }
     
@@ -56,6 +61,7 @@ abstract class Module(
         if (enabled) {
             enabled = false
             onDisable()
+            // ConfigManager.saveConfig(ModuleManager) // Decided against saving here to avoid double saves if called by loadConfig
         }
     }
     
@@ -64,28 +70,17 @@ abstract class Module(
      */
     fun setKey(keyCode: Int) {
         this.keyCode = keyCode
-        // KeyBindingHelper.registerKeyBinding handles overriding existing bindings with the same ID.
-        // So, we just need to ensure a new one is registered if the key is not UNKNOWN.
-        // If a keybinding was previously registered, it will be effectively replaced by the new one
-        // or become inactive if the new key is UNKNOWN.
-        
-        // We need to ensure the keyBinding instance is updated or cleared.
-        // Calling registerKeyBinding() will create a new KeyBinding instance
-        // associated with the current keyCode (which might be UNKNOWN).
-        // Fabric's KeyBindingHelper.registerKeyBinding handles overriding existing ones with the same ID.
         registerKeyBinding()
+        // Save config after key change
+        ConfigManager.saveConfig(ModuleManager)
     }
     
     private fun registerKeyBinding() {
-        // Always create a new KeyBinding instance when called.
-        // If keyCode is UNKNOWN, it effectively unbinds it from an active key,
-        // though the KeyBinding object itself might still exist if not managed carefully.
-        // Fabric's KeyBindingHelper handles reregistration by ID.
         keyBinding = KeyBindingHelper.registerKeyBinding(
             KeyBinding(
-                "key.penguinclient.module.$name", // ID for the keybinding
+                "key.penguinclient.module.$name", 
                 InputUtil.Type.KEYSYM,
-                this.keyCode, // Use the current module's keyCode
+                this.keyCode, 
                 "category.penguinclient.modules"
             )
         )
@@ -110,7 +105,6 @@ abstract class Module(
      * Check if the module's key binding was pressed
      */
     fun wasKeybindPressed(): Boolean {
-        // Ensure we only check wasPressed if a key is actually bound.
         return keyCode != GLFW.GLFW_KEY_UNKNOWN && keyBinding?.wasPressed() ?: false
     }
     
