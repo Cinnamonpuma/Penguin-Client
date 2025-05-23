@@ -3,7 +3,8 @@
 	"package": "cinnamon.penguin.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"ExampleClientMixin"
+		"ExampleClientMixin",
+		"KeyboardMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
