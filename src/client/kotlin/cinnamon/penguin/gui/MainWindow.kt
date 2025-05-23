@@ -15,6 +15,7 @@ import cinnamon.penguin.gui.common.RoundedButton // Added import
 import cinnamon.penguin.config.GlobalSettingsManager
 import cinnamon.penguin.input.KeyboardHandler
 import cinnamon.penguin.module.ModuleManager
+import cinnamon.penguin.config.ConfigManager // Added import
 import org.lwjgl.glfw.GLFW
 import net.minecraft.client.util.InputUtil
 
@@ -681,7 +682,7 @@ class MainWindow : JFrame("PenguinClient") {
                             val finalKeyCode = mcKey.code
 
                             currentModule.setKey(finalKeyCode)
-                            ModuleManager.saveModuleConfiguration()
+                            // ModuleManager.saveModuleConfiguration() // Removed, module.setKey now handles saving
                             moduleKeyButton.text = getKeyDisplayName(finalKeyCode)
                             println("Key for ${currentModule.name} updated to: ${getKeyDisplayName(finalKeyCode)} (Code: $finalKeyCode)")
                         }

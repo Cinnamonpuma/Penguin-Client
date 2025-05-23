@@ -3,6 +3,7 @@ package cinnamon.penguin.gui
 import cinnamon.penguin.module.Category
 import cinnamon.penguin.module.Module
 import cinnamon.penguin.module.ModuleManager
+import cinnamon.penguin.config.ConfigManager // Added import
 import java.awt.*
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
@@ -482,7 +483,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
         okButton.font = Font("Arial", Font.PLAIN, 12)
         okButton.addActionListener {
             module.setKey(tempKeyCode)
-            ModuleManager.saveModuleConfiguration()
+            // ModuleManager.saveModuleConfiguration() // Removed, module.setKey now handles saving
             dialog.dispose()
         }
         
@@ -494,7 +495,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
             tempKeyCode = GLFW.GLFW_KEY_UNKNOWN
             module.setKey(GLFW.GLFW_KEY_UNKNOWN)
             keyField.text = "None"
-            ModuleManager.saveModuleConfiguration() // Save after clearing key
+            // ModuleManager.saveModuleConfiguration() // Removed, module.setKey now handles saving
             dialog.dispose()
         }
         
