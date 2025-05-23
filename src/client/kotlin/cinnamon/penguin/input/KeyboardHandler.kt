@@ -7,6 +7,7 @@ import net.minecraft.client.util.InputUtil
 import org.lwjgl.glfw.GLFW
 import cinnamon.penguin.gui.MainWindow
 import javax.swing.SwingUtilities
+import cinnamon.penguin.config.GlobalSettingsManager
 
 object KeyboardHandler {
     private lateinit var openGuiKey: KeyBinding
@@ -14,19 +15,20 @@ object KeyboardHandler {
     private var isGuiOpen = false
 
     fun register() {
+        GlobalSettingsManager.loadSettings() // Load settings first
         println("KeyboardHandler: Registering key binding...")
         
-        // Register the key binding for F7
+        // Register the key binding using the loaded key code
         openGuiKey = KeyBindingHelper.registerKeyBinding(
             KeyBinding(
                 "key.penguinclient.open_gui_v2", // Changed ID to avoid conflicts with old versions
                 InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_F7,
+                GlobalSettingsManager.currentConfig.guiOpenKeyCode, // Use loaded key
                 "category.penguinclient.general"
             )
         )
         
-        println("KeyboardHandler: Key binding registered for F7")
+        println("KeyboardHandler: Key binding registered for key code ${GlobalSettingsManager.currentConfig.guiOpenKeyCode}")
 
         // Register the tick event to check for key presses
         ClientTickEvents.END_CLIENT_TICK.register { client ->
@@ -68,5 +70,22 @@ object KeyboardHandler {
         }
         
         println("KeyboardHandler: Tick event registered successfully")
+    }
+
+    fun updateGuiOpenKey(newKeyCode: Int) {
+        println("KeyboardHandler: Updating GUI open key to $newKeyCode")
+        GlobalSettingsManager.currentConfig = GlobalSettingsManager.currentConfig.copy(guiOpenKeyCode = newKeyCode)
+        GlobalSettingsManager.saveSettings()
+
+        // Re-register the key binding with the new key code
+        openGuiKey = KeyBindingHelper.registerKeyBinding(
+            KeyBinding(
+                "key.penguinclient.open_gui_v2", // Same ID
+                InputUtil.Type.KEYSYM,
+                newKeyCode, // Use the new key code
+                "category.penguinclient.general"
+            )
+        )
+        println("KeyboardHandler: GUI open key updated and re-registered to $newKeyCode")
     }
 }
