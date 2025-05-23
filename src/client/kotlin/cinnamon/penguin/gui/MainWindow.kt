@@ -30,13 +30,13 @@ private class RoundedMainPanel(layout: LayoutManager, private val cornerRadius: 
 }
 
 class MainWindow : JFrame("PenguinClient") {
-    // Colors and styling - Black and white with glow
-    private val backgroundColor = Color(0, 0, 0) // black
-    private val foregroundColor = Color(255, 255, 255) // white
-    private val accentColor = Color(255, 255, 255) // white
-    private val tabBackgroundColor = Color(15, 15, 15) // very dark grey
-    private val tabSelectedColor = Color(30, 30, 30) // dark grey
-    private val headerColor = Color(5, 5, 5) // near black
+    // Colors and styling - New Palette
+    private val backgroundColor = Color(35, 35, 35)
+    private val foregroundColor = Color(240, 240, 240)
+    private val accentColor = Color(70, 130, 180) // Steel Blue
+    private val tabBackgroundColor = Color(45, 45, 45)
+    private val tabSelectedColor = Color(60, 60, 60)
+    private val headerColor = Color(25, 25, 25)
 
     init {
         try {
@@ -106,8 +106,8 @@ class MainWindow : JFrame("PenguinClient") {
         UIManager.put("TabbedPane.foreground", foregroundColor)
         UIManager.put("TabbedPane.selected", tabSelectedColor)
         UIManager.put("TabbedPane.contentAreaColor", backgroundColor)
-        UIManager.put("TabbedPane.light", Color(20,20,20)) // Adjusted for B&W
-        UIManager.put("TabbedPane.dark", Color(0,0,0)) // Adjusted for B&W
+        UIManager.put("TabbedPane.light", Color(50,50,50)) 
+        UIManager.put("TabbedPane.dark", Color(30,30,30)) 
         UIManager.put("TabbedPane.focus", accentColor)
         UIManager.put("Button.background", tabBackgroundColor)
         UIManager.put("Button.foreground", foregroundColor)
@@ -115,13 +115,13 @@ class MainWindow : JFrame("PenguinClient") {
     
     private fun createHeaderPanel(): JPanel {
         val panel = JPanel(BorderLayout())
-        panel.setBackground(headerColor)
+        panel.setBackground(headerColor) // Updated
         panel.preferredSize = Dimension(800, 60)
         panel.setBorder(EmptyBorder(5, 15, 5, 15))
         
         // Create logo panel (left side)
         val logoPanel = JPanel(FlowLayout(FlowLayout.LEFT, 0, 0))
-        logoPanel.setBackground(headerColor)
+        logoPanel.setBackground(headerColor) // Updated
         
         // Try to load logo image
         try {
@@ -176,20 +176,20 @@ class MainWindow : JFrame("PenguinClient") {
             // Create a text-based logo as fallback
             val logoText = JLabel("P")
             logoText.font = Font("Arial", Font.BOLD, 24)
-            logoText.setForeground(accentColor)
+            logoText.setForeground(accentColor) // Updated
             logoPanel.add(logoText)
         }
         
         // Create title label
         val titleLabel = JLabel("PenguinClient")
-        titleLabel.setForeground(accentColor)
+        titleLabel.setForeground(accentColor) // Updated
         titleLabel.font = Font("Arial", Font.BOLD, 24)
         titleLabel.setBorder(EmptyBorder(0, 10, 0, 0))
         logoPanel.add(titleLabel)
         
         // Create window control buttons (right side)
         val controlPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 5, 0))
-        controlPanel.setBackground(headerColor)
+        controlPanel.setBackground(headerColor) // Updated
 
         // Global Settings Button
         val globalSettingsButton = RoundedButton( // Use common RoundedButton
@@ -200,7 +200,7 @@ class MainWindow : JFrame("PenguinClient") {
         )
         globalSettingsButton.preferredSize = Dimension(30,30) // Set preferred size after instantiation
         globalSettingsButton.toolTipText = "Global Settings"
-        globalSettingsButton.setBackground(headerColor) // Match other header buttons
+        globalSettingsButton.setBackground(headerColor) // Updated
 
         try {
             // Attempt to load icon from path (relative to resources)
@@ -225,7 +225,7 @@ class MainWindow : JFrame("PenguinClient") {
                     val g2d = g.create() as Graphics2D
                     g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
                     g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE)
-                    g2d.color = foregroundColor // Use theme's foreground color (white)
+                    g2d.color = foregroundColor // Updated
 
                     val barHeight = 2
                     val barWidth = 14 // Max width within 16x16
@@ -247,28 +247,28 @@ class MainWindow : JFrame("PenguinClient") {
             showGlobalSettings()
         }
         // Use existing styling function, ensure it works with RoundedButton background
-        styleWindowControlButton(globalSettingsButton, headerColor, Color(50, 50, 50), foregroundColor, foregroundColor)
+        styleWindowControlButton(globalSettingsButton, headerColor, Color(70, 70, 70), foregroundColor, foregroundColor) // Updated hoverBg
         controlPanel.add(globalSettingsButton) // Add to the left of minimize
 
         // Minimize button
-        val minimizeButton = createWindowControlButton("_") {
+        val minimizeButton = createWindowControlButton("_") { // createWindowControlButton will use new headerColor
             state = Frame.ICONIFIED
         }
 
         // Maximize button
-        val maximizeButton = createWindowControlButton("□") {
+        val maximizeButton = createWindowControlButton("□") { // createWindowControlButton will use new headerColor
             extendedState = if (extendedState == Frame.MAXIMIZED_BOTH) Frame.NORMAL else Frame.MAXIMIZED_BOTH
         }
         
         // Close button
-        val closeButton = createWindowControlButton("×") {
+        val closeButton = createWindowControlButton("×") { // createWindowControlButton will use new headerColor
             dispose()
         }
         
         // Add hover effects and specific styling for close button
-        styleWindowControlButton(minimizeButton, headerColor, Color(50, 50, 50), foregroundColor, foregroundColor)
-        styleWindowControlButton(maximizeButton, headerColor, Color(50, 50, 50), foregroundColor, foregroundColor)
-        styleWindowControlButton(closeButton, headerColor, Color(70, 70, 70), foregroundColor, foregroundColor) // Grey hover for close
+        styleWindowControlButton(minimizeButton, headerColor, Color(70, 70, 70), foregroundColor, foregroundColor) // Updated hoverBg
+        styleWindowControlButton(maximizeButton, headerColor, Color(70, 70, 70), foregroundColor, foregroundColor) // Updated hoverBg
+        styleWindowControlButton(closeButton, headerColor, Color(180, 70, 70), foregroundColor, foregroundColor) // Updated hoverBg for close
         
         controlPanel.add(minimizeButton)
         controlPanel.add(maximizeButton)
@@ -308,7 +308,7 @@ class MainWindow : JFrame("PenguinClient") {
     private fun createWindowControlButton(text: String, action: () -> Unit): JButton {
         val button = JButton(text)
         button.font = Font("Arial", Font.BOLD, 14) // Consistent font for controls
-        button.setBackground(headerColor)
+        button.setBackground(headerColor) // Updated
         button.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10))
         button.isFocusPainted = false
         button.addActionListener { action() }
@@ -393,26 +393,28 @@ class MainWindow : JFrame("PenguinClient") {
                 
                 // Add a subtle gradient to the tab bar
                 val gradient = GradientPaint(
-                    0f, 0f, Color(10, 10, 10), // Darker top for B&W
-                    0f, 30f, Color(5, 5, 5)   // Even darker bottom for B&W
+                    0f, 0f, Color(40, 40, 40), // Updated
+                    0f, 30f, Color(30, 30, 30)   // Updated
                 )
                 g2d.paint = gradient
                 g2d.fillRect(0, 0, width, 30)
 
                 // Enhanced subtle glow at the bottom of the tab bar
                 val glowLayers = 3
-                val baseAlpha = 20
+                val baseAlpha = 20 // Keep alpha low for subtlety
                 for (i in 0 until glowLayers) {
                     val currentAlpha = baseAlpha - (i * (baseAlpha / glowLayers))
                     if (currentAlpha <= 0) continue
-                    g2d.color = Color(255, 255, 255, currentAlpha)
+                    // Use accentColor for glow if it's light enough, otherwise white
+                    val glowColor = if (accentColor.red > 100 || accentColor.green > 100 || accentColor.blue > 100) accentColor else Color.WHITE
+                    g2d.color = Color(glowColor.red, glowColor.green, glowColor.blue, currentAlpha)
                     g2d.drawLine(0, 30 + i, width, 30 + i) // Draw lines downwards
                 }
             }
         }
         
-        tabbedPane.setBackground(backgroundColor)
-        tabbedPane.setForeground(foregroundColor)
+        tabbedPane.setBackground(backgroundColor) // Updated
+        tabbedPane.setForeground(foregroundColor) // Updated
         tabbedPane.setBorder(BorderFactory.createEmptyBorder())
         
         // Add a tab for each category with custom styling
@@ -420,14 +422,14 @@ class MainWindow : JFrame("PenguinClient") {
             val categoryPanel = CategoryPanel(category)
             val scrollPane = JScrollPane(categoryPanel)
             scrollPane.setBorder(null)
-            scrollPane.setBackground(backgroundColor) // Background for the scrollpane itself
-            scrollPane.getViewport().setBackground(backgroundColor) // Background for the viewport
+            scrollPane.setBackground(backgroundColor) // Updated
+            scrollPane.getViewport().setBackground(backgroundColor) // Updated
             scrollPane.verticalScrollBar.unitIncrement = 16
             // Style the scrollbar to match the theme
             scrollPane.verticalScrollBar.ui = object : javax.swing.plaf.basic.BasicScrollBarUI() {
                 override fun configureScrollBarColors() {
-                    this.thumbColor = Color(50,50,50) // Dark grey thumb
-                    this.trackColor = Color(15,15,15) // Very dark grey track
+                    this.thumbColor = Color(80,80,80) // Updated
+                    this.trackColor = Color(45,45,45) // Updated
                 }
                 override fun createDecreaseButton(orientation: Int): JButton {
                     return createZeroButton()
@@ -455,12 +457,12 @@ class MainWindow : JFrame("PenguinClient") {
                     // Add a bottom border to the selected tab with glow
                     if (tabbedPane.selectedComponent == scrollPane) {
                         val arc = 6 // Corner radius for tab selection indicator
-                        val mainLineThickness = 3
+                        val mainLineThickness = 4
                         val glowEffectLayers = 3 // Number of layers for the glow around the selection indicator
                         val glowBaseAlpha = 40 // Base alpha for the selection glow
 
                         // Draw main selection indicator (rounded)
-                        g2d.color = accentColor // White for selected tab line
+                        g2d.color = accentColor // Updated
                         g2d.fillRoundRect(0, height - mainLineThickness, width, mainLineThickness, arc, arc)
 
                         // Draw softer glow effect around the main line
@@ -469,7 +471,7 @@ class MainWindow : JFrame("PenguinClient") {
                             val currentAlpha = glowBaseAlpha - (i * (glowBaseAlpha / glowEffectLayers))
                             if (currentAlpha <= 0) continue
                             
-                            g2d.color = Color(255, 255, 255, currentAlpha)
+                            g2d.color = Color(accentColor.red, accentColor.green, accentColor.blue, currentAlpha) // Updated
                             // The glow should be drawn around the main selection indicator.
                             // We can expand the rectangle slightly for each layer.
                             // Offset x,y and increase width,height for an outset effect.
@@ -489,7 +491,7 @@ class MainWindow : JFrame("PenguinClient") {
                     }
                 }
             }
-            tabLabel.setForeground(foregroundColor)
+            tabLabel.setForeground(foregroundColor) // Updated
             tabLabel.font = Font("Arial", Font.BOLD, 12)
             tabLabel.setBorder(EmptyBorder(8, 15, 8, 15))
             
@@ -519,14 +521,14 @@ class MainWindow : JFrame("PenguinClient") {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
 
                 // Paint the actual dialog background (rounded)
-                g2d.color = this@MainWindow.backgroundColor // Use MainWindow's theme background
+                g2d.color = this@MainWindow.backgroundColor // Updated
                 g2d.fillRoundRect(x, y, width -1 , height -1, cornerRadiusVal, cornerRadiusVal)
 
                 // Paint glow effect (expanding outwards)
                 for (i in 0 until glowLayersVal) {
                     val alpha = baseGlowAlphaVal - (i * (baseGlowAlphaVal / glowLayersVal))
                     if (alpha <= 0) continue
-                    g2d.color = Color(255, 255, 255, alpha)
+                    g2d.color = Color(accentColor.red, accentColor.green, accentColor.blue, alpha) // Updated
                     // Draw glow slightly outside the main rounded rect
                     g2d.drawRoundRect(
                         x - i, y - i,
@@ -552,20 +554,21 @@ class MainWindow : JFrame("PenguinClient") {
 
         val titleLabel = JLabel("Global Settings")
         titleLabel.font = Font("Arial", Font.BOLD, 18)
-        titleLabel.setForeground(foregroundColor)
+        titleLabel.setForeground(foregroundColor) // Updated
         titleLabel.horizontalAlignment = SwingConstants.CENTER
         titleLabel.setBorder(EmptyBorder(0,0,10,0))
         mainDialogPanel.add(titleLabel, BorderLayout.NORTH)
         
         val placeholderLabel = JLabel("Global settings options will appear here.")
         placeholderLabel.font = Font("Arial", Font.PLAIN, 14)
-        placeholderLabel.setForeground(foregroundColor)
+        placeholderLabel.setForeground(foregroundColor) // Updated
         placeholderLabel.horizontalAlignment = SwingConstants.CENTER
         mainDialogPanel.add(placeholderLabel, BorderLayout.CENTER)
 
         val closeButton = JButton("Close") // Standard JButton, can be RoundedButton if preferred
-        closeButton.setBackground(tabSelectedColor) // A theme color
-        closeButton.setForeground(foregroundColor)
+        closeButton.setBackground(tabSelectedColor) // Updated
+        closeButton.setForeground(foregroundColor) // Updated
+        closeButton.font = Font("Arial", Font.PLAIN, 12) // Set font
         closeButton.isFocusPainted = false
         closeButton.addActionListener { dialog.dispose() }
         

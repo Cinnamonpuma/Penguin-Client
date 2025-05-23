@@ -19,15 +19,14 @@ import cinnamon.penguin.gui.common.RoundedToggleButton // Added import
  * Panel for displaying modules in a category with Lunar Client-inspired styling
  */
 class CategoryPanel(private val category: Category) : JPanel() {
-    // Colors and styling - Lunar Client inspired
-    // Colors and styling - Black and white with glow
-    private val backgroundColor = Color(0, 0, 0) // black
-    private val foregroundColor = Color(255, 255, 255) // white
-    private val accentColor = Color(255, 255, 255) // white
-    private val enabledColor = Color(50, 50, 50) // dark grey
-    private val disabledColor = Color(20, 20, 20) // very dark grey
-    private val hoverColor = Color(70, 70, 70) // grey
-    private val buttonIconColor = Color(255, 255, 255) // white
+    // Colors and styling - New Palette
+    private val backgroundColor = Color(35, 35, 35)
+    private val foregroundColor = Color(240, 240, 240)
+    private val accentColor = Color(70, 130, 180) // Steel Blue
+    private val enabledColor = Color(65, 65, 65)
+    private val disabledColor = Color(45, 45, 45)
+    private val hoverColor = Color(80, 80, 80)
+    private val buttonIconColor = Color(240, 240, 240)
 
     
     private val moduleButtons = mutableMapOf<Module, JToggleButton>()
@@ -52,13 +51,13 @@ class CategoryPanel(private val category: Category) : JPanel() {
             val cpsPanel = JPanel(BorderLayout(5, 5))
             cpsPanel.isOpaque = false // Children of opaque panel
             cpsPanel.border = BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color(70, 70, 70)), // Darker border
+                BorderFactory.createLineBorder(Color(80, 80, 80)), // Updated border color
                 "Clicks Per Second",
                 TitledBorder.LEFT, TitledBorder.TOP,
-                Font("Arial", Font.BOLD, 11), this@CategoryPanel.foregroundColor
+                Font("Arial", Font.BOLD, 11), this@CategoryPanel.foregroundColor // Updated
             )
             val cpsLabel = JLabel("${module.clicksPerSecond} CPS")
-            cpsLabel.foreground = this@CategoryPanel.foregroundColor
+            cpsLabel.foreground = this@CategoryPanel.foregroundColor // Updated
             cpsLabel.font = Font("Arial", Font.PLAIN, 11)
             cpsLabel.horizontalAlignment = SwingConstants.CENTER
             val cpsSlider = JSlider(JSlider.HORIZONTAL, 1, 20, module.clicksPerSecond)
@@ -75,13 +74,13 @@ class CategoryPanel(private val category: Category) : JPanel() {
             val randomPanel = JPanel(BorderLayout(5, 5))
             randomPanel.isOpaque = false
             randomPanel.border = BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color(70, 70, 70)),
+                BorderFactory.createLineBorder(Color(80, 80, 80)), // Updated border color
                 "Randomization",
                 TitledBorder.LEFT, TitledBorder.TOP,
-                Font("Arial", Font.BOLD, 11), this@CategoryPanel.foregroundColor
+                Font("Arial", Font.BOLD, 11), this@CategoryPanel.foregroundColor // Updated
             )
             val randomLabel = JLabel("${module.randomization}% Variation")
-            randomLabel.foreground = this@CategoryPanel.foregroundColor
+            randomLabel.foreground = this@CategoryPanel.foregroundColor // Updated
             randomLabel.font = Font("Arial", Font.PLAIN, 11)
             randomLabel.horizontalAlignment = SwingConstants.CENTER
             val randomSlider = JSlider(JSlider.HORIZONTAL, 0, 50, module.randomization)
@@ -101,7 +100,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
             // optionsPanel.border = BorderFactory.createTitledBorder(...) // Optional border for options
             val rightClickCheckbox = JCheckBox("Right Click Instead")
             rightClickCheckbox.isOpaque = false
-            rightClickCheckbox.foreground = this@CategoryPanel.foregroundColor
+            rightClickCheckbox.foreground = this@CategoryPanel.foregroundColor // Updated
             rightClickCheckbox.font = Font("Arial", Font.PLAIN, 11)
             rightClickCheckbox.isSelected = module.rightClick
             rightClickCheckbox.addActionListener { module.rightClick = rightClickCheckbox.isSelected }
@@ -121,7 +120,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
         
         if (modules.isEmpty()) {
             val label = JLabel("No modules in this category")
-            label.foreground = foregroundColor
+            label.foreground = foregroundColor // Updated
             label.font = Font("Arial", Font.PLAIN, 14)
             label.alignmentX = Component.CENTER_ALIGNMENT // Center the label
             add(label)
@@ -129,29 +128,29 @@ class CategoryPanel(private val category: Category) : JPanel() {
             // Add each module as a toggle button
             modules.forEach { module ->
                 val panel = JPanel(BorderLayout())
-                panel.background = backgroundColor
+                panel.background = backgroundColor // Updated
                 panel.alignmentX = Component.CENTER_ALIGNMENT // Center the panel
                 // panel.maximumSize will be set after components are added to determine preferredWidth
-                panel.border = BorderFactory.createMatteBorder(0, 0, 1, 0, Color(40, 40, 40)) // Adjusted border color
+                panel.border = BorderFactory.createMatteBorder(0, 0, 1, 0, Color(50, 50, 50)) // Updated border color
                 
                 val button = RoundedToggleButton(module.name) // Use RoundedToggleButton
                 button.isSelected = module.enabled
-                button.background = if (module.enabled) enabledColor else disabledColor
-                button.foreground = foregroundColor // Text on buttons should be white
+                button.background = if (module.enabled) enabledColor else disabledColor // Updated
+                button.foreground = foregroundColor // Updated
                 button.font = Font("Arial", Font.BOLD, 13)
                 // isFocusPainted and border are handled in RoundedToggleButton init
                 
                 // Create buttonPanel here before referencing it
                 val buttonPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 0, 0))
-                buttonPanel.background = if (module.enabled) enabledColor else disabledColor
+                buttonPanel.background = if (module.enabled) enabledColor else disabledColor // Updated
                 
                 // Add hover effect
                 addHoverTransition(button, disabledColor, hoverColor, condition = { !button.isSelected })
                 
                 button.addActionListener {
                     module.toggle()
-                    button.background = if (module.enabled) enabledColor else disabledColor
-                    button.foreground = foregroundColor // Text on buttons should be white
+                    button.background = if (module.enabled) enabledColor else disabledColor // Updated
+                    button.foreground = foregroundColor // Updated
                     
                     // Add glow effect to button panel when enabled
                     if (module.enabled) {
@@ -168,7 +167,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
                                     val currentAlpha = baseAlpha - (i * (baseAlpha / glowLayers))
                                     if (currentAlpha <= 0) continue // Don't draw if alpha is zero or less
                                     
-                                    g2d.color = Color(255, 255, 255, currentAlpha)
+                                    g2d.color = Color(accentColor.red, accentColor.green, accentColor.blue, currentAlpha) // Updated glow color
                                     // Each layer is slightly inset from the previous one
                                     // The glow should expand outwards, so we draw from outside-in, or adjust x,y,width,height
                                     // Let's draw from component edge inwards for simplicity of border insets
@@ -191,7 +190,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
                 
                 // Add settings button with Lunar-style icon
                 val settingsButton = RoundedButton() // Use RoundedButton
-                settingsButton.background = backgroundColor
+                settingsButton.background = backgroundColor // Updated
                 // isFocusPainted and border are handled in RoundedButton init
                 settingsButton.preferredSize = Dimension(30, 30)
                 
@@ -205,7 +204,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
                         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
                         g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE) // For cleaner strokes
                         
-                        g2d.color = buttonIconColor
+                        g2d.color = buttonIconColor // Updated
                         val centerX = x + 8
                         val centerY = y + 8
                         val outerRadius = 7
@@ -218,7 +217,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
                         
                         // Draw teeth (as filled rectangles extending from the center)
                         // Erase parts of the outer circle to create teeth
-                        g2d.color = backgroundColor // Use background to "cut out" teeth spaces
+                        g2d.color = backgroundColor // Updated (cut out color)
                         val toothAngleStep = 2 * Math.PI / (toothCount * 2) // Angle for each half-tooth (space and tooth)
                         
                         for (i in 0 until toothCount * 2) {
@@ -236,7 +235,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
                         }
 
                         // Draw inner hole (filled with background color to appear as a hole)
-                        g2d.color = backgroundColor 
+                        g2d.color = backgroundColor // Updated (cut out color)
                         g2d.fillOval(
                             (centerX - innerRadius).toInt(), 
                             (centerY - innerRadius).toInt(), 
@@ -244,7 +243,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
                             (innerRadius * 2).toInt()
                         )
                         // Re-draw a thin border for the inner circle if needed, or leave as a hole
-                        g2d.color = buttonIconColor
+                        g2d.color = buttonIconColor // Updated
                         g2d.drawOval(
                             (centerX - innerRadius).toInt(),
                             (centerY - innerRadius).toInt(),
@@ -272,7 +271,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
                 
                 // Add keybind button with keyboard icon
                 val keybindButton = RoundedButton() // Use RoundedButton
-                keybindButton.background = backgroundColor
+                keybindButton.background = backgroundColor // Updated
                 // isFocusPainted and border are handled in RoundedButton init
                 keybindButton.preferredSize = Dimension(30, 30)
                 
@@ -286,7 +285,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
                         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
                         
                         // Draw keyboard icon
-                        g2d.color = buttonIconColor
+                        g2d.color = buttonIconColor // Updated
                         g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE)
 
 
@@ -294,7 +293,7 @@ class CategoryPanel(private val category: Category) : JPanel() {
                         g2d.fillRoundRect(x + 1, y + 4, 14, 8, 3, 3)
 
                         // Keys (small filled rectangles, "cut out" with background color)
-                        g2d.color = backgroundColor // Use background color to draw keys
+                        g2d.color = backgroundColor // Updated (cut out color)
                         val keyWidth = 3
                         val keyHeight = 2
                         val keyPadding = 1
@@ -448,11 +447,11 @@ class CategoryPanel(private val category: Category) : JPanel() {
         dialog.setLocationRelativeTo(this)
         
         val panel = JPanel(BorderLayout())
-        panel.background = backgroundColor
+        panel.background = backgroundColor // Updated
         panel.border = EmptyBorder(10, 10, 10, 10)
         
         val label = JLabel("Press any key to set the keybind for ${module.name}")
-        label.foreground = foregroundColor
+        label.foreground = foregroundColor // Updated
         label.horizontalAlignment = SwingConstants.CENTER
         label.font = Font("Arial", Font.PLAIN, 12)
         
@@ -460,8 +459,8 @@ class CategoryPanel(private val category: Category) : JPanel() {
 
         val keyField = JTextField()
         keyField.isEditable = false
-        keyField.background = Color(30,30,30) // Dark grey
-        keyField.foreground = foregroundColor
+        keyField.background = disabledColor // Updated
+        keyField.foreground = foregroundColor // Updated
         keyField.horizontalAlignment = SwingConstants.CENTER
         keyField.font = Font("Arial", Font.PLAIN, 12)
         keyField.text = if (tempKeyCode == GLFW.GLFW_KEY_UNKNOWN) "None" else KeyEvent.getKeyText(tempKeyCode)
@@ -475,11 +474,11 @@ class CategoryPanel(private val category: Category) : JPanel() {
         })
         
         val buttonPanel = JPanel(FlowLayout(FlowLayout.CENTER))
-        buttonPanel.background = backgroundColor
+        buttonPanel.background = backgroundColor // Updated
 
         val okButton = RoundedButton("OK")
-        okButton.background = Color(30,30,30)
-        okButton.foreground = foregroundColor
+        okButton.background = disabledColor // Updated
+        okButton.foreground = foregroundColor // Updated
         okButton.font = Font("Arial", Font.PLAIN, 12)
         okButton.addActionListener {
             module.setKey(tempKeyCode)
@@ -488,8 +487,8 @@ class CategoryPanel(private val category: Category) : JPanel() {
         }
         
         val clearButton = RoundedButton("Clear") // Use RoundedButton
-        clearButton.background = Color(30,30,30) // Dark grey
-        clearButton.foreground = foregroundColor
+        clearButton.background = disabledColor // Updated
+        clearButton.foreground = foregroundColor // Updated
         clearButton.font = Font("Arial", Font.PLAIN, 12)
         clearButton.addActionListener {
             tempKeyCode = GLFW.GLFW_KEY_UNKNOWN
@@ -500,8 +499,8 @@ class CategoryPanel(private val category: Category) : JPanel() {
         }
         
         val cancelButton = RoundedButton("Cancel") // Use RoundedButton
-        cancelButton.background = Color(30,30,30) // Dark grey
-        cancelButton.foreground = foregroundColor
+        cancelButton.background = disabledColor // Updated
+        cancelButton.foreground = foregroundColor // Updated
         cancelButton.font = Font("Arial", Font.PLAIN, 12)
         cancelButton.addActionListener {
             dialog.dispose()
@@ -549,9 +548,9 @@ class CategoryPanel(private val category: Category) : JPanel() {
                     val currentBg = component.background
                     val targetBg = if (component is JToggleButton && component.isSelected) {
                         // Determine hover for selected state, e.g. a slightly brighter/darker version of enabledColor
-                        enabledColor.brighter() // Example: make it brighter when hovered and selected
+                        enabledColor.brighter() // Updated (uses new enabledColor)
                     } else {
-                        hoverBg
+                        hoverColor // Updated (uses new hoverColor)
                     }
                     val nextBg = Color(
                         currentBg.red + (targetBg.red - currentBg.red) / 5,
@@ -570,9 +569,9 @@ class CategoryPanel(private val category: Category) : JPanel() {
                 timer?.stop()
                 val targetBgExit = if (component is JToggleButton && component.isSelected) {
                      // When mouse exits a selected toggle button, it should revert to its selected color (e.g., enabledColor)
-                    enabledColor
+                    enabledColor // Updated (uses new enabledColor)
                 } else {
-                    baseBg
+                    baseBg // baseBg will be the new disabledColor or backgroundColor
                 }
                 timer = Timer(10) { // Adjust delay for smoothness
                     val currentBg = component.background
