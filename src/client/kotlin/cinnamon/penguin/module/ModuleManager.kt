@@ -2,6 +2,7 @@ package cinnamon.penguin.module
 
 import cinnamon.penguin.config.ConfigManager // Added import for ConfigManager
 import cinnamon.penguin.module.modules.combat.AutoClickerModule
+import cinnamon.penguin.module.modules.render.CustomEspModule // Added import
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 // Removed Gson, TypeToken, File, FileReader, FileWriter imports
@@ -21,6 +22,7 @@ object ModuleManager {
 
         // Register modules first
         registerModule(AutoClickerModule())
+        registerModule(CustomEspModule()) // Added registration
         // Add more modules here as they're created
 
         // Load configuration using ConfigManager
