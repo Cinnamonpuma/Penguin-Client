@@ -15,6 +15,8 @@ import javax.swing.border.TitledBorder
 import org.lwjgl.glfw.GLFW
 import cinnamon.penguin.gui.common.RoundedButton // Added import
 import cinnamon.penguin.gui.common.RoundedToggleButton // Added import
+import cinnamon.penguin.module.modules.render.BlockEspModule // New import
+import cinnamon.penguin.gui.InlineBlockEspSettingsPanel // New import
 
 /**
  * Panel for displaying modules in a category with Lunar Client-inspired styling
@@ -262,6 +264,9 @@ class CategoryPanel(private val category: Category) : JPanel() {
                         is cinnamon.penguin.module.modules.combat.AutoClickerModule -> {
                             toggleInlineSettings(module, panel) // 'panel' is the moduleEntryPanel
                         }
+                        is BlockEspModule -> { // New case
+                            toggleInlineBlockEspSettings(module, panel)
+                        }
                         // Add cases for other module types as needed for their specific settings UI
                         else -> {
                             // Placeholder for modules without specific inline UI or if dialog is preferred
@@ -433,6 +438,42 @@ class CategoryPanel(private val category: Category) : JPanel() {
         container.putClientProperty(stepKey, 0) // Initialize step property on container
         activeSettingsTimers[module] = timer
         timer.start()
+    }
+
+    private fun toggleInlineBlockEspSettings(module: BlockEspModule, moduleEntryPanel: JPanel) {
+        activeSettingsTimers[module]?.stop() // Stop any existing animation
+
+        val settingsContainer = (moduleEntryPanel.parent as JPanel).components.filterIsInstance<JPanel>()
+            .find { it.name == "settingsContainer_${module.name}" } ?: return
+
+        val isExpanding = openSettingsPanel[module] == null || !openSettingsPanel[module]!!.isVisible
+        val currentContent = openSettingsPanel[module]
+
+        if (isExpanding) {
+            if (currentContent == null) {
+                val newSettingsPanel = InlineBlockEspSettingsPanel(module) // Use the new panel
+                newSettingsPanel.alignmentX = Component.CENTER_ALIGNMENT
+                openSettingsPanel[module] = newSettingsPanel
+                settingsContainer.add(newSettingsPanel, BorderLayout.CENTER)
+            }
+            val content = openSettingsPanel[module]!!
+            content.isVisible = true
+            // Ensure panel.maximumSize.width is valid, might need to take from moduleEntryPanel.width
+            val targetWidth = moduleEntryPanel.width.takeIf { it > 0 } ?: this.width - 30 // Fallback width
+            animatePanel(settingsContainer, targetWidth, content.preferredSize.height, true, module)
+        } else {
+            val content = openSettingsPanel[module]
+            if (content != null) {
+                val targetWidth = moduleEntryPanel.width.takeIf { it > 0 } ?: this.width - 30
+                animatePanel(settingsContainer, targetWidth, 0, false, module) {
+                    content.isVisible = false
+                    settingsContainer.removeAll()
+                    openSettingsPanel.remove(module)
+                    settingsContainer.revalidate()
+                    settingsContainer.repaint()
+                }
+            }
+        }
     }
     
     // Remove or comment out the old showAutoClickerSettings dialog
