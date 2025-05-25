@@ -19,20 +19,20 @@ object PenguinclientClient : ClientModInitializer {
             ModuleManager.init() // This now handles ESP module initialization and event registration
             println("PenguinClient: ModuleManager initialized")
 
-            // Initialize ESP Module
-            CustomEspModule.initialize()
-            println("PenguinClient: CustomEspModule initialized")
+            // Initialize ESP Module - This is now handled by ModuleManager if CustomEspModule is registered there.
+            // CustomEspModule.initialize() 
+            // println("PenguinClient: CustomEspModule initialized") // Keep if initialize() does something else critical
             
             // Register keyboard handler for opening the GUI with F7
             KeyboardHandler.register()
             println("PenguinClient: KeyboardHandler registered successfully")
 
-            // Register ESP rendering
-            WorldRenderEvents.AFTER_ENTITIES.register { context ->
-                CustomEspModule.updateTargetedEntities() 
-                CustomEspModule.renderEspHighlights(context.matrixStack(), context.consumers(), context.camera().pos)
-            }
-            println("PenguinClient: ESP rendering registered")
+            // Register ESP rendering - This is also handled by CustomEspModule itself via its onEnable if managed by ModuleManager
+            // WorldRenderEvents.AFTER_ENTITIES.register { context ->
+            //     CustomEspModule.updateTargetedEntities() 
+            //     CustomEspModule.renderEspHighlights(context.matrixStack(), context.consumers(), context.camera().pos)
+            // }
+            // println("PenguinClient: ESP rendering registered") 
             
             println("PenguinClient: Initialization complete")
         } catch (e: Exception) {

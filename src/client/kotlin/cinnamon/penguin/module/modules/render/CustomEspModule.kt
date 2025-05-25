@@ -83,7 +83,7 @@ class CustomEspModule : Module("EntityESP", "Highlights entities through walls."
 
     override fun onDisable() {
         super.onDisable()
-        WorldRenderEvents.AFTER_ENTITIES.unregister(worldRenderListener)
+        // WorldRenderEvents.AFTER_ENTITIES.unregister(worldRenderListener) // Removed as unregister is not directly available or needed here
         val client = MinecraftClient.getInstance()
         if (client.world != null) {
             previouslyGlowingEntities.forEach { entity ->

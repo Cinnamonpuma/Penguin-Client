@@ -1,17 +1,18 @@
 package cinnamon.penguin.gui
 
 import cinnamon.penguin.module.modules.render.BlockEspModule
-import cinnamon.penguin.module.modules.render.AirCheckMode // Import AirCheckMode
+import cinnamon.penguin.module.modules.render.AirCheckModeSimplified // Ensure this is the correct enum
 import java.awt.*
 import javax.swing.*
 import javax.swing.border.EmptyBorder
-// import javax.swing.border.TitledBorder // Not used in the final code, can be removed
+// Removed TitledBorder as it wasn't used in the previous version of this file's code.
+// If needed for specific sub-panels, it can be re-added locally.
 import java.awt.event.FocusAdapter
 import java.awt.event.FocusEvent
 
 class InlineBlockEspSettingsPanel(private val module: BlockEspModule) : JPanel() {
 
-    private val panelBackgroundColor = Color(50, 50, 50) // Slightly different from CategoryPanel's item bg
+    private val panelBackgroundColor = Color(50, 50, 50)
     private val componentBackgroundColor = Color(60, 60, 60)
     private val textColor = Color(220, 220, 220)
     private val borderColor = Color(80, 80, 80)
@@ -25,17 +26,18 @@ class InlineBlockEspSettingsPanel(private val module: BlockEspModule) : JPanel()
         addTitle("Block ESP Settings")
 
         // General Settings
-        addToggle("Enable Module", module.settings::enabled)
-        addTextField("World Seed", module.settings::worldSeed, "Enter world seed...")
-        addSlider("Sim Range (Chunks)", 1, 16, module.settings::simulationRangeChunks)
+        addToggle("Enable Module", module.settings::enabled) // This refers to BlockEspSettings.enabled, not Module.enabled
+        // Removed: World Seed TextField
+        // Removed: Sim Range Slider
+        addSlider("Scan Range (Blocks)", 8, 128, module.settings::scanRange) // Added Scan Range
         addToggle("Highlight Ores Only", module.settings::highlightOresOnly)
-        addComboBox("Air Check Mode", AirCheckMode.values(), module.settings::airCheckMode)
+        addComboBox("Air Check Mode", AirCheckModeSimplified.values(), module.settings::airCheckMode)
 
         // Ore Toggles
         addSectionTitle("Ore Types to Highlight")
-        val orePanel = JPanel(GridLayout(0, 2, 5, 5)) // 0 rows means as many as needed, 2 columns
+        val orePanel = JPanel(GridLayout(0, 2, 5, 5))
         orePanel.isOpaque = false
-        orePanel.border = BorderFactory.createEmptyBorder(0,10,0,10) // Indent ore toggles slightly
+        orePanel.border = BorderFactory.createEmptyBorder(0,10,0,10)
         addOreToggle(orePanel, "Diamond", module.settings::highlightDiamond)
         addOreToggle(orePanel, "Iron", module.settings::highlightIron)
         addOreToggle(orePanel, "Gold", module.settings::highlightGold)
@@ -51,7 +53,7 @@ class InlineBlockEspSettingsPanel(private val module: BlockEspModule) : JPanel()
         val otherBlocksPanel = JPanel(GridLayout(0, 2, 5, 5))
         otherBlocksPanel.isOpaque = false
         otherBlocksPanel.border = BorderFactory.createEmptyBorder(0,10,0,10)
-        addOreToggle(otherBlocksPanel, "Spawners", module.settings::highlightSpawners) // Reusing addOreToggle for simplicity
+        addOreToggle(otherBlocksPanel, "Spawners", module.settings::highlightSpawners)
         addOreToggle(otherBlocksPanel, "Chests", module.settings::highlightChests)
         add(otherBlocksPanel)
 
@@ -61,7 +63,6 @@ class InlineBlockEspSettingsPanel(private val module: BlockEspModule) : JPanel()
         addTextField("Other Block Outline Color (RRGGBBAA)", module.settings::otherBlockOutlineColor)
         addSliderFloat("Line Width", 0.5f, 5.0f, module.settings::lineWidth, "%.1f")
 
-        // Add a spacer at the bottom
         add(Box.createVerticalStrut(10))
     }
 
@@ -86,7 +87,7 @@ class InlineBlockEspSettingsPanel(private val module: BlockEspModule) : JPanel()
     private fun createStyledPanel(): JPanel {
         val panel = JPanel(BorderLayout(10, 0))
         panel.isOpaque = false
-        panel.maximumSize = Dimension(Integer.MAX_VALUE, 30) // Constrain height
+        panel.maximumSize = Dimension(Integer.MAX_VALUE, 30)
         panel.alignmentX = Component.CENTER_ALIGNMENT
         return panel
     }
@@ -129,7 +130,7 @@ class InlineBlockEspSettingsPanel(private val module: BlockEspModule) : JPanel()
         val textField = JTextField(property.get())
         textField.background = componentBackgroundColor
         textField.foreground = textColor
-        textField.caretColor = accentColor // Use an accent color for the caret
+        textField.caretColor = Companion.accentColor // Using companion object style
         textField.border = BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(borderColor),
             EmptyBorder(2, 5, 2, 5)
@@ -146,18 +147,25 @@ class InlineBlockEspSettingsPanel(private val module: BlockEspModule) : JPanel()
                 }
             }
             override fun focusLost(e: FocusEvent?) {
+                // Save on focus lost only if it's not the placeholder
+                if (placeholder != null && textField.text == placeholder) {
+                    // If it's still placeholder, don't save it as actual value, revert property if needed or leave as is
+                } else {
+                     property.set(textField.text)
+                     module.saveSettings()
+                }
+                 // Ensure placeholder is shown if field is empty after attempting save
                 if (placeholder != null && textField.text.isEmpty()) {
                     textField.text = placeholder
                     textField.foreground = textColor.darker()
-                } else { // Only save if not placeholder or if text is actual user input
-                    property.set(textField.text)
-                    module.saveSettings()
                 }
             }
         })
-        textField.addActionListener { // Save on Enter key
-            property.set(textField.text)
-            module.saveSettings()
+        textField.addActionListener {
+            if (!(placeholder != null && textField.text == placeholder)) {
+                property.set(textField.text)
+                module.saveSettings()
+            }
         }
         panel.add(textField, BorderLayout.CENTER)
         add(panel)
@@ -173,7 +181,7 @@ class InlineBlockEspSettingsPanel(private val module: BlockEspModule) : JPanel()
         val valueLabel = JLabel(property.get().toString())
         valueLabel.foreground = textColor
         valueLabel.font = Font("Arial", Font.PLAIN, 12)
-        valueLabel.preferredSize = Dimension(30, valueLabel.preferredSize.height) // Fixed width for value
+        valueLabel.preferredSize = Dimension(30, valueLabel.preferredSize.height)
         panel.add(valueLabel, BorderLayout.EAST)
 
         val slider = JSlider(JSlider.HORIZONTAL, min, max, property.get())
@@ -182,10 +190,7 @@ class InlineBlockEspSettingsPanel(private val module: BlockEspModule) : JPanel()
             val value = slider.value
             property.set(value)
             valueLabel.text = value.toString()
-            // Delay saving for sliders until mouse release if desired, but for now, save on change
-            if (!slider.valueIsAdjusting) {
-                module.saveSettings()
-            }
+            module.saveSettings()
         }
         panel.add(slider, BorderLayout.CENTER)
         add(panel)
@@ -198,8 +203,7 @@ class InlineBlockEspSettingsPanel(private val module: BlockEspModule) : JPanel()
         jLabel.font = Font("Arial", Font.PLAIN, 12)
         panel.add(jLabel, BorderLayout.WEST)
 
-        // Represent float slider with integer JSlider internally
-        val scale = 10 // For one decimal place precision
+        val scale = 10
         val currentIntValue = (property.get() * scale).toInt()
         val minIntValue = (min * scale).toInt()
         val maxIntValue = (max * scale).toInt()
@@ -216,9 +220,7 @@ class InlineBlockEspSettingsPanel(private val module: BlockEspModule) : JPanel()
             val floatValue = slider.value.toFloat() / scale
             property.set(floatValue)
             valueLabel.text = String.format(format, floatValue)
-            if (!slider.valueIsAdjusting) {
-                module.saveSettings()
-            }
+            module.saveSettings()
         }
         panel.add(slider, BorderLayout.CENTER)
         add(panel)
@@ -234,17 +236,23 @@ class InlineBlockEspSettingsPanel(private val module: BlockEspModule) : JPanel()
         val comboBox = JComboBox(values)
         comboBox.selectedItem = property.get()
         comboBox.font = Font("Arial", Font.PLAIN, 11)
-        // Basic styling for JComboBox (can be enhanced with custom renderer)
         comboBox.background = componentBackgroundColor
         comboBox.foreground = textColor
-        // Style the editor component if it's a JTextField (default for non-editable JComboBox)
-         (comboBox.editor?.editorComponent as? JTextField)?.let { 
+        // Attempt to style the editor component for consistency if it's a JTextField
+        (comboBox.editor?.editorComponent as? JTextField)?.let {
             it.background = componentBackgroundColor
             it.foreground = textColor
-            it.caretColor = accentColor // Assuming accentColor is defined
+            it.caretColor = Companion.accentColor // Use Companion object for accentColor
         }
-        // For non-editable JComboBox, the arrow button might need custom UI to style
-        // For now, this basic styling will apply to the text area.
+        // Style the list cell renderer for dropdown items
+        comboBox.setRenderer(object : DefaultListCellRenderer() {
+            override fun getListCellRendererComponent(list: JList<*>?, value: Any?, index: Int, isSelected: Boolean, cellHasFocus: Boolean): Component {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
+                background = if (isSelected) Companion.accentColor.darker() else componentBackgroundColor
+                foreground = textColor
+                return this
+            }
+        })
 
         comboBox.addActionListener {
             property.set(comboBox.selectedItem as E)
